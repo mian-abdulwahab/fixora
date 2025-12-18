@@ -10,6 +10,7 @@ import Register from "./pages/Register";
 import Services from "./pages/Services";
 import ProviderDetail from "./pages/ProviderDetail";
 import Dashboard from "./pages/Dashboard";
+import ProviderDashboard from "./pages/ProviderDashboard";
 import HowItWorks from "./pages/HowItWorks";
 import BecomeProvider from "./pages/BecomeProvider";
 import NotFound from "./pages/NotFound";
@@ -36,6 +37,7 @@ const App = () => (
             <Route path="/services" element={<Services />} />
             <Route path="/provider/:id" element={<ProviderDetail />} />
             <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/provider-dashboard" element={<ProviderDashboard />} />
             <Route path="/how-it-works" element={<HowItWorks />} />
             <Route path="/become-provider" element={<BecomeProvider />} />
             

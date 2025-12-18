@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,19 +14,33 @@ const Login = () => {
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { signIn, user } = useAuth();
+  const { signIn, user, userRole, loading } = useAuth();
 
-  // Redirect if already logged in
-  if (user) {
-    navigate("/dashboard");
-    return null;
-  }
+  // Redirect if already logged in based on role
+  useEffect(() => {
+    if (!loading && user && userRole) {
+      redirectBasedOnRole(userRole);
+    }
+  }, [user, userRole, loading]);
+
+  const redirectBasedOnRole = (role: string) => {
+    switch (role) {
+      case "admin":
+        navigate("/admin");
+        break;
+      case "provider":
+        navigate("/provider-dashboard");
+        break;
+      default:
+        navigate("/dashboard");
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
 
-    const { error } = await signIn(email, password);
+    const { error, role } = await signIn(email, password);
     
     if (error) {
       toast({
@@ -43,8 +57,20 @@ const Login = () => {
       description: "You have successfully logged in.",
     });
     setIsLoading(false);
-    navigate("/dashboard");
+    
+    if (role) {
+      redirectBasedOnRole(role);
+    }
   };
+
+  // Show loading while checking auth status
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex">
