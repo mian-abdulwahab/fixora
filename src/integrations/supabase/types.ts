@@ -14,6 +14,38 @@ export type Database = {
   }
   public: {
     Tables: {
+      blocked_dates: {
+        Row: {
+          blocked_date: string
+          created_at: string | null
+          id: string
+          provider_id: string
+          reason: string | null
+        }
+        Insert: {
+          blocked_date: string
+          created_at?: string | null
+          id?: string
+          provider_id: string
+          reason?: string | null
+        }
+        Update: {
+          blocked_date?: string
+          created_at?: string | null
+          id?: string
+          provider_id?: string
+          reason?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "blocked_dates_provider_id_fkey"
+            columns: ["provider_id"]
+            isOneToOne: false
+            referencedRelation: "service_providers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       bookings: {
         Row: {
           address: string
@@ -123,6 +155,7 @@ export type Database = {
           avatar_url: string | null
           created_at: string | null
           email: string | null
+          email_verified: boolean | null
           id: string
           name: string | null
           phone: string | null
@@ -133,6 +166,7 @@ export type Database = {
           avatar_url?: string | null
           created_at?: string | null
           email?: string | null
+          email_verified?: boolean | null
           id: string
           name?: string | null
           phone?: string | null
@@ -143,6 +177,7 @@ export type Database = {
           avatar_url?: string | null
           created_at?: string | null
           email?: string | null
+          email_verified?: boolean | null
           id?: string
           name?: string | null
           phone?: string | null
@@ -150,6 +185,44 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: []
+      }
+      provider_availability: {
+        Row: {
+          created_at: string | null
+          day_of_week: number
+          end_time: string
+          id: string
+          is_available: boolean | null
+          provider_id: string
+          start_time: string
+        }
+        Insert: {
+          created_at?: string | null
+          day_of_week: number
+          end_time: string
+          id?: string
+          is_available?: boolean | null
+          provider_id: string
+          start_time: string
+        }
+        Update: {
+          created_at?: string | null
+          day_of_week?: number
+          end_time?: string
+          id?: string
+          is_available?: boolean | null
+          provider_id?: string
+          start_time?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "provider_availability_provider_id_fkey"
+            columns: ["provider_id"]
+            isOneToOne: false
+            referencedRelation: "service_providers"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       provider_categories: {
         Row: {
@@ -177,6 +250,41 @@ export type Database = {
           },
           {
             foreignKeyName: "provider_categories_provider_id_fkey"
+            columns: ["provider_id"]
+            isOneToOne: false
+            referencedRelation: "service_providers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      provider_portfolios: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          id: string
+          image_url: string
+          provider_id: string
+          title: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          image_url: string
+          provider_id: string
+          title?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          image_url?: string
+          provider_id?: string
+          title?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "provider_portfolios_provider_id_fkey"
             columns: ["provider_id"]
             isOneToOne: false
             referencedRelation: "service_providers"

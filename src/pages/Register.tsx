@@ -133,21 +133,12 @@ const Register = () => {
 
     toast({
       title: "Account created!",
-      description: `Welcome to Fixora. You are now signed in as ${role}.`,
+      description: "Please check your email to verify your account.",
     });
     setIsLoading(false);
     
-    // Redirect based on selected role
-    switch (role) {
-      case "admin":
-        navigate("/admin");
-        break;
-      case "provider":
-        navigate("/provider-dashboard");
-        break;
-      default:
-        navigate("/dashboard");
-    }
+    // Redirect to email verification page
+    navigate("/verify-email");
   };
 
   // Show loading while checking auth status
