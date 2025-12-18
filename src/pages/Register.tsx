@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -20,13 +20,27 @@ const Register = () => {
   const [role, setRole] = useState<"user" | "provider">("user");
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { signUp, user } = useAuth();
+  const { signUp, user, userRole, loading } = useAuth();
 
-  // Redirect if already logged in
-  if (user) {
-    navigate("/dashboard");
-    return null;
-  }
+  // Redirect if already logged in based on role
+  useEffect(() => {
+    if (!loading && user && userRole) {
+      redirectBasedOnRole(userRole);
+    }
+  }, [user, userRole, loading]);
+
+  const redirectBasedOnRole = (userRoleValue: string) => {
+    switch (userRoleValue) {
+      case "admin":
+        navigate("/admin");
+        break;
+      case "provider":
+        navigate("/provider-dashboard");
+        break;
+      default:
+        navigate("/dashboard");
+    }
+  };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -69,11 +83,26 @@ const Register = () => {
 
     toast({
       title: "Account created!",
-      description: "Welcome to Fixora. You can now sign in.",
+      description: "Welcome to Fixora. You are now signed in.",
     });
     setIsLoading(false);
-    navigate("/dashboard");
+    
+    // Redirect based on selected role
+    if (role === "provider") {
+      navigate("/provider-dashboard");
+    } else {
+      navigate("/dashboard");
+    }
   };
+
+  // Show loading while checking auth status
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex">
@@ -122,7 +151,7 @@ const Register = () => {
                   : "text-muted-foreground hover:text-foreground"
               }`}
             >
-              I need services
+              I'm a Customer
             </button>
             <button
               type="button"
@@ -133,7 +162,7 @@ const Register = () => {
                   : "text-muted-foreground hover:text-foreground"
               }`}
             >
-              I'm a provider
+              I'm a Provider
             </button>
           </div>
 
@@ -231,7 +260,7 @@ const Register = () => {
             </div>
 
             <Button type="submit" className="w-full h-12" disabled={isLoading}>
-              {isLoading ? "Creating account..." : "Create Account"}
+              {isLoading ? "Creating account..." : `Create ${role === "provider" ? "Provider" : "Customer"} Account`}
             </Button>
           </form>
 

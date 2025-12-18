@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import Header from "@/components/layout/Header";
 import { Button } from "@/components/ui/button";
@@ -32,7 +32,7 @@ const sidebarLinks = [
 
 const Dashboard = () => {
   const [activeTab, setActiveTab] = useState<"upcoming" | "past">("upcoming");
-  const { user, signOut } = useAuth();
+  const { user, signOut, userRole, loading } = useAuth();
   const navigate = useNavigate();
   const { data: bookings = [], isLoading } = useMyBookings();
 
@@ -41,11 +41,28 @@ const Dashboard = () => {
     navigate("/");
   };
 
-  // Redirect if not logged in
-  if (!user) {
-    navigate("/login");
-    return null;
+  // Redirect based on role
+  useEffect(() => {
+    if (!loading) {
+      if (!user) {
+        navigate("/login");
+      } else if (userRole === "admin") {
+        navigate("/admin");
+      } else if (userRole === "provider") {
+        navigate("/provider-dashboard");
+      }
+    }
+  }, [user, userRole, loading, navigate]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
+    );
   }
+
+  if (!user || userRole === "admin" || userRole === "provider") return null;
 
   const getStatusColor = (status: string) => {
     switch (status) {
