@@ -13,6 +13,12 @@ import Dashboard from "./pages/Dashboard";
 import HowItWorks from "./pages/HowItWorks";
 import BecomeProvider from "./pages/BecomeProvider";
 import NotFound from "./pages/NotFound";
+import AdminDashboard from "./pages/admin/AdminDashboard";
+import AdminOverview from "./pages/admin/AdminOverview";
+import AdminUsers from "./pages/admin/AdminUsers";
+import AdminProviders from "./pages/admin/AdminProviders";
+import AdminBookings from "./pages/admin/AdminBookings";
+import AdminCategories from "./pages/admin/AdminCategories";
 
 const queryClient = new QueryClient();
 
@@ -32,6 +38,16 @@ const App = () => (
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/how-it-works" element={<HowItWorks />} />
             <Route path="/become-provider" element={<BecomeProvider />} />
+            
+            {/* Admin Routes */}
+            <Route path="/admin" element={<AdminDashboard />}>
+              <Route index element={<AdminOverview />} />
+              <Route path="users" element={<AdminUsers />} />
+              <Route path="providers" element={<AdminProviders />} />
+              <Route path="bookings" element={<AdminBookings />} />
+              <Route path="categories" element={<AdminCategories />} />
+            </Route>
+            
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
