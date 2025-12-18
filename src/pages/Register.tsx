@@ -3,9 +3,10 @@ import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Wrench, Mail, Lock, Eye, EyeOff, User, Phone } from "lucide-react";
+import { Wrench, Mail, Lock, Eye, EyeOff, User, Phone, Shield, Key } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
 
 const Register = () => {
   const [formData, setFormData] = useState({
@@ -14,10 +15,12 @@ const Register = () => {
     phone: "",
     password: "",
     confirmPassword: "",
+    adminKey: "",
   });
   const [showPassword, setShowPassword] = useState(false);
+  const [showAdminKey, setShowAdminKey] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [role, setRole] = useState<"user" | "provider">("user");
+  const [role, setRole] = useState<"user" | "provider" | "admin">("user");
   const navigate = useNavigate();
   const { toast } = useToast();
   const { signUp, user, userRole, loading } = useAuth();
@@ -69,29 +72,81 @@ const Register = () => {
 
     setIsLoading(true);
 
+    // Verify admin key if registering as admin
+    if (role === "admin") {
+      if (!formData.adminKey.trim()) {
+        toast({
+          title: "Admin key required",
+          description: "Please enter the admin registration key.",
+          variant: "destructive",
+        });
+        setIsLoading(false);
+        return;
+      }
+
+      try {
+        const { data, error: verifyError } = await supabase.functions.invoke("verify-admin-key", {
+          body: { adminKey: formData.adminKey },
+        });
+
+        if (verifyError || !data?.valid) {
+          toast({
+            title: "Invalid admin key",
+            description: "The admin registration key is incorrect.",
+            variant: "destructive",
+          });
+          setIsLoading(false);
+          return;
+        }
+      } catch {
+        toast({
+          title: "Verification failed",
+          description: "Could not verify admin key. Please try again.",
+          variant: "destructive",
+        });
+        setIsLoading(false);
+        return;
+      }
+    }
+
     const { error } = await signUp(formData.email, formData.password, formData.name, role);
 
     if (error) {
-      toast({
-        title: "Registration failed",
-        description: error.message,
-        variant: "destructive",
-      });
+      // Handle duplicate email error specifically
+      const errorMessage = error.message.toLowerCase();
+      if (errorMessage.includes("already registered") || errorMessage.includes("already exists") || errorMessage.includes("duplicate")) {
+        toast({
+          title: "Email already registered",
+          description: "An account with this email already exists. Please sign in instead.",
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Registration failed",
+          description: error.message,
+          variant: "destructive",
+        });
+      }
       setIsLoading(false);
       return;
     }
 
     toast({
       title: "Account created!",
-      description: "Welcome to Fixora. You are now signed in.",
+      description: `Welcome to Fixora. You are now signed in as ${role}.`,
     });
     setIsLoading(false);
     
     // Redirect based on selected role
-    if (role === "provider") {
-      navigate("/provider-dashboard");
-    } else {
-      navigate("/dashboard");
+    switch (role) {
+      case "admin":
+        navigate("/admin");
+        break;
+      case "provider":
+        navigate("/provider-dashboard");
+        break;
+      default:
+        navigate("/dashboard");
     }
   };
 
@@ -117,9 +172,11 @@ const Register = () => {
             Join the Fixora <br /> Community
           </h2>
           <p className="text-primary-foreground/80 text-lg max-w-md">
-            {role === "user"
-              ? "Get access to thousands of verified service providers in your area."
-              : "Grow your business by connecting with homeowners who need your services."}
+            {role === "admin"
+              ? "Manage the platform, users, and service providers with full administrative access."
+              : role === "provider"
+              ? "Grow your business by connecting with homeowners who need your services."
+              : "Get access to thousands of verified service providers in your area."}
           </p>
         </div>
       </div>
@@ -145,24 +202,35 @@ const Register = () => {
             <button
               type="button"
               onClick={() => setRole("user")}
-              className={`flex-1 py-2.5 rounded-md text-sm font-medium transition-all ${
+              className={`flex-1 py-2 rounded-md text-sm font-medium transition-all ${
                 role === "user"
                   ? "bg-card shadow-sm text-foreground"
                   : "text-muted-foreground hover:text-foreground"
               }`}
             >
-              I'm a Customer
+              Customer
             </button>
             <button
               type="button"
               onClick={() => setRole("provider")}
-              className={`flex-1 py-2.5 rounded-md text-sm font-medium transition-all ${
+              className={`flex-1 py-2 rounded-md text-sm font-medium transition-all ${
                 role === "provider"
                   ? "bg-card shadow-sm text-foreground"
                   : "text-muted-foreground hover:text-foreground"
               }`}
             >
-              I'm a Provider
+              Provider
+            </button>
+            <button
+              type="button"
+              onClick={() => setRole("admin")}
+              className={`flex-1 py-2 rounded-md text-sm font-medium transition-all ${
+                role === "admin"
+                  ? "bg-card shadow-sm text-foreground"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              Admin
             </button>
           </div>
 
@@ -259,8 +327,41 @@ const Register = () => {
               </div>
             </div>
 
+            {/* Admin Key Field - Only shown when admin role is selected */}
+            {role === "admin" && (
+              <div className="space-y-2">
+                <Label htmlFor="adminKey" className="flex items-center gap-2">
+                  <Shield className="w-4 h-4 text-primary" />
+                  Admin Registration Key
+                </Label>
+                <div className="relative">
+                  <Key className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+                  <Input
+                    id="adminKey"
+                    name="adminKey"
+                    type={showAdminKey ? "text" : "password"}
+                    placeholder="Enter secret admin key"
+                    value={formData.adminKey}
+                    onChange={handleChange}
+                    className="pl-10 pr-10 h-12"
+                    required
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowAdminKey(!showAdminKey)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  >
+                    {showAdminKey ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                  </button>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Contact system administrator to get the admin registration key
+                </p>
+              </div>
+            )}
+
             <Button type="submit" className="w-full h-12" disabled={isLoading}>
-              {isLoading ? "Creating account..." : `Create ${role === "provider" ? "Provider" : "Customer"} Account`}
+              {isLoading ? "Creating account..." : `Create ${role === "admin" ? "Admin" : role === "provider" ? "Provider" : "Customer"} Account`}
             </Button>
           </form>
 
