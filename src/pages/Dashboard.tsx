@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import Header from "@/components/layout/Header";
 import { Button } from "@/components/ui/button";
 import { 
@@ -14,42 +14,11 @@ import {
   Bell,
   LogOut,
   Home,
-  FileText,
   MessageSquare
 } from "lucide-react";
-
-const mockBookings = [
-  {
-    id: "1",
-    service: "Leak Repair",
-    provider: "Ahmed's Plumbing",
-    date: "Dec 20, 2025",
-    time: "10:00 AM",
-    status: "confirmed",
-    price: "$75",
-    address: "123 Main Street, Sahiwal",
-  },
-  {
-    id: "2",
-    service: "AC Maintenance",
-    provider: "CoolBreeze HVAC",
-    date: "Dec 25, 2025",
-    time: "02:00 PM",
-    status: "pending",
-    price: "$120",
-    address: "456 Oak Avenue, Sahiwal",
-  },
-  {
-    id: "3",
-    service: "Electrical Wiring",
-    provider: "PowerFix Electrical",
-    date: "Dec 15, 2025",
-    time: "11:00 AM",
-    status: "completed",
-    price: "$200",
-    address: "789 Pine Road, Sahiwal",
-  },
-];
+import { useAuth } from "@/contexts/AuthContext";
+import { useMyBookings } from "@/hooks/useBookings";
+import { format } from "date-fns";
 
 const sidebarLinks = [
   { icon: Home, label: "Dashboard", href: "/dashboard", active: true },
@@ -63,6 +32,20 @@ const sidebarLinks = [
 
 const Dashboard = () => {
   const [activeTab, setActiveTab] = useState<"upcoming" | "past">("upcoming");
+  const { user, signOut } = useAuth();
+  const navigate = useNavigate();
+  const { data: bookings = [], isLoading } = useMyBookings();
+
+  const handleSignOut = async () => {
+    await signOut();
+    navigate("/");
+  };
+
+  // Redirect if not logged in
+  if (!user) {
+    navigate("/login");
+    return null;
+  }
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -74,13 +57,19 @@ const Dashboard = () => {
         return "bg-emerald-100 text-emerald-700";
       case "cancelled":
         return "bg-destructive/10 text-destructive";
+      case "in_progress":
+        return "bg-blue-100 text-blue-700";
       default:
         return "bg-muted text-muted-foreground";
     }
   };
 
-  const upcomingBookings = mockBookings.filter(b => b.status !== "completed");
-  const pastBookings = mockBookings.filter(b => b.status === "completed");
+  const upcomingBookings = bookings.filter(b => b.status !== "completed" && b.status !== "cancelled");
+  const pastBookings = bookings.filter(b => b.status === "completed" || b.status === "cancelled");
+
+  const totalSpent = bookings
+    .filter(b => b.payment_status === "paid")
+    .reduce((sum, b) => sum + Number(b.total_amount), 0);
 
   return (
     <div className="min-h-screen bg-secondary/30">
@@ -94,7 +83,7 @@ const Dashboard = () => {
               <User className="w-6 h-6 text-primary" />
             </div>
             <div>
-              <p className="font-semibold text-foreground">Abdul Wahab</p>
+              <p className="font-semibold text-foreground">{user?.user_metadata?.name || "User"}</p>
               <p className="text-sm text-muted-foreground">Customer</p>
             </div>
           </div>
@@ -116,7 +105,10 @@ const Dashboard = () => {
             ))}
           </nav>
 
-          <button className="flex items-center gap-3 px-4 py-3 rounded-lg text-destructive hover:bg-destructive/10 transition-colors mt-4">
+          <button 
+            onClick={handleSignOut}
+            className="flex items-center gap-3 px-4 py-3 rounded-lg text-destructive hover:bg-destructive/10 transition-colors mt-4"
+          >
             <LogOut className="w-5 h-5" />
             Sign Out
           </button>
@@ -128,7 +120,7 @@ const Dashboard = () => {
             {/* Header */}
             <div className="mb-8">
               <h1 className="text-2xl md:text-3xl font-bold text-foreground mb-2">
-                Welcome back, Abdul! 👋
+                Welcome back, {user?.user_metadata?.name?.split(" ")[0] || "User"}! 👋
               </h1>
               <p className="text-muted-foreground">
                 Here's an overview of your recent activity and upcoming bookings.
@@ -142,21 +134,21 @@ const Dashboard = () => {
                   <span className="text-muted-foreground text-sm">Total Bookings</span>
                   <Calendar className="w-5 h-5 text-primary" />
                 </div>
-                <p className="text-2xl font-bold text-foreground">12</p>
+                <p className="text-2xl font-bold text-foreground">{bookings.length}</p>
               </div>
               <div className="bg-card rounded-xl shadow-card p-5">
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-muted-foreground text-sm">Upcoming</span>
                   <Clock className="w-5 h-5 text-accent" />
                 </div>
-                <p className="text-2xl font-bold text-foreground">2</p>
+                <p className="text-2xl font-bold text-foreground">{upcomingBookings.length}</p>
               </div>
               <div className="bg-card rounded-xl shadow-card p-5">
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-muted-foreground text-sm">Total Spent</span>
                   <CreditCard className="w-5 h-5 text-emerald-600" />
                 </div>
-                <p className="text-2xl font-bold text-foreground">$845</p>
+                <p className="text-2xl font-bold text-foreground">${totalSpent.toFixed(0)}</p>
               </div>
             </div>
 
@@ -191,44 +183,52 @@ const Dashboard = () => {
               </div>
 
               <div className="divide-y divide-border">
-                {(activeTab === "upcoming" ? upcomingBookings : pastBookings).map((booking) => (
-                  <div key={booking.id} className="p-6 hover:bg-secondary/50 transition-colors">
-                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-3 mb-2">
-                          <h3 className="font-semibold text-foreground">{booking.service}</h3>
-                          <span className={`px-2 py-1 rounded-full text-xs font-medium capitalize ${getStatusColor(booking.status)}`}>
-                            {booking.status}
-                          </span>
+                {isLoading ? (
+                  <div className="p-12 text-center text-muted-foreground">Loading...</div>
+                ) : (activeTab === "upcoming" ? upcomingBookings : pastBookings).length > 0 ? (
+                  (activeTab === "upcoming" ? upcomingBookings : pastBookings).map((booking) => (
+                    <div key={booking.id} className="p-6 hover:bg-secondary/50 transition-colors">
+                      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-3 mb-2">
+                            <h3 className="font-semibold text-foreground">
+                              {booking.services?.title || "Service"}
+                            </h3>
+                            <span className={`px-2 py-1 rounded-full text-xs font-medium capitalize ${getStatusColor(booking.status)}`}>
+                              {booking.status.replace("_", " ")}
+                            </span>
+                          </div>
+                          <p className="text-muted-foreground text-sm mb-2">
+                            {booking.service_providers?.business_name}
+                          </p>
+                          <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
+                            <span className="flex items-center gap-1">
+                              <Calendar className="w-4 h-4" />
+                              {format(new Date(booking.scheduled_date), "MMM d, yyyy")}
+                            </span>
+                            <span className="flex items-center gap-1">
+                              <Clock className="w-4 h-4" />
+                              {booking.scheduled_time}
+                            </span>
+                            <span className="flex items-center gap-1">
+                              <MapPin className="w-4 h-4" />
+                              {booking.address}
+                            </span>
+                          </div>
                         </div>
-                        <p className="text-muted-foreground text-sm mb-2">{booking.provider}</p>
-                        <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
-                          <span className="flex items-center gap-1">
-                            <Calendar className="w-4 h-4" />
-                            {booking.date}
+                        <div className="flex items-center gap-4">
+                          <span className="text-lg font-semibold text-foreground">
+                            ${Number(booking.total_amount).toFixed(0)}
                           </span>
-                          <span className="flex items-center gap-1">
-                            <Clock className="w-4 h-4" />
-                            {booking.time}
-                          </span>
-                          <span className="flex items-center gap-1">
-                            <MapPin className="w-4 h-4" />
-                            {booking.address}
-                          </span>
+                          <Button variant="outline" size="sm">
+                            View Details
+                            <ChevronRight className="w-4 h-4 ml-1" />
+                          </Button>
                         </div>
-                      </div>
-                      <div className="flex items-center gap-4">
-                        <span className="text-lg font-semibold text-foreground">{booking.price}</span>
-                        <Button variant="outline" size="sm">
-                          View Details
-                          <ChevronRight className="w-4 h-4 ml-1" />
-                        </Button>
                       </div>
                     </div>
-                  </div>
-                ))}
-
-                {(activeTab === "upcoming" ? upcomingBookings : pastBookings).length === 0 && (
+                  ))
+                ) : (
                   <div className="p-12 text-center">
                     <p className="text-muted-foreground mb-4">No {activeTab} bookings found.</p>
                     <Button asChild>
@@ -240,12 +240,12 @@ const Dashboard = () => {
             </div>
 
             {/* Quick Actions */}
-            {activeTab === "past" && pastBookings.length > 0 && (
+            {activeTab === "past" && pastBookings.length > 0 && pastBookings[0].status === "completed" && (
               <div className="mt-8 bg-card rounded-2xl shadow-card p-6">
                 <h3 className="font-semibold text-foreground mb-4">Rate Your Experience</h3>
                 <div className="flex items-center gap-4">
                   <p className="text-muted-foreground text-sm">
-                    How was your experience with {pastBookings[0].provider}?
+                    How was your experience with {pastBookings[0].service_providers?.business_name}?
                   </p>
                   <div className="flex gap-1">
                     {[1, 2, 3, 4, 5].map((star) => (
