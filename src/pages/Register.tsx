@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Wrench, Mail, Lock, Eye, EyeOff, User, Phone } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/contexts/AuthContext";
 
 const Register = () => {
   const [formData, setFormData] = useState({
@@ -19,6 +20,13 @@ const Register = () => {
   const [role, setRole] = useState<"user" | "provider">("user");
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { signUp, user } = useAuth();
+
+  // Redirect if already logged in
+  if (user) {
+    navigate("/dashboard");
+    return null;
+  }
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -36,17 +44,35 @@ const Register = () => {
       return;
     }
 
+    if (formData.password.length < 6) {
+      toast({
+        title: "Password too short",
+        description: "Password must be at least 6 characters long.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsLoading(true);
 
-    // Simulate registration - will be replaced with actual auth
-    setTimeout(() => {
+    const { error } = await signUp(formData.email, formData.password, formData.name, role);
+
+    if (error) {
       toast({
-        title: "Account created!",
-        description: "Welcome to Fixora. Please check your email to verify your account.",
+        title: "Registration failed",
+        description: error.message,
+        variant: "destructive",
       });
       setIsLoading(false);
-      navigate("/login");
-    }, 1000);
+      return;
+    }
+
+    toast({
+      title: "Account created!",
+      description: "Welcome to Fixora. You can now sign in.",
+    });
+    setIsLoading(false);
+    navigate("/dashboard");
   };
 
   return (
@@ -158,7 +184,6 @@ const Register = () => {
                   value={formData.phone}
                   onChange={handleChange}
                   className="pl-10 h-12"
-                  required
                 />
               </div>
             </div>
@@ -171,12 +196,12 @@ const Register = () => {
                   id="password"
                   name="password"
                   type={showPassword ? "text" : "password"}
-                  placeholder="Create a password"
+                  placeholder="Create a password (min 6 chars)"
                   value={formData.password}
                   onChange={handleChange}
                   className="pl-10 pr-10 h-12"
                   required
-                  minLength={8}
+                  minLength={6}
                 />
                 <button
                   type="button"
