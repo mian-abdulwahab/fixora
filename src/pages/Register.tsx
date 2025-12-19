@@ -240,8 +240,14 @@ const Register = () => {
 
     setIsLoading(false);
     
-    // Redirect to email verification page
-    navigate("/verify-email");
+    // Redirect based on role after successful registration
+    if (role === "provider") {
+      navigate("/provider-dashboard");
+    } else if (role === "admin") {
+      navigate("/admin");
+    } else {
+      navigate("/dashboard");
+    }
   };
 
   // Show loading while checking auth status
