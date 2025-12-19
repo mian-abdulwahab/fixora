@@ -25,13 +25,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [isAdmin, setIsAdmin] = useState(false);
 
   const fetchUserRole = async (userId: string) => {
-    // Check profile role first
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("role")
-      .eq("id", userId)
-      .single();
-
     // Check if user has admin role in user_roles table
     const { data: adminRole } = await supabase.rpc("has_role", {
       _user_id: userId,
@@ -44,10 +37,23 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       return "admin" as UserRole;
     }
 
-    const role = (profile?.role || "user") as UserRole;
-    setUserRole(role);
+    // Check if user is a provider (has a service_providers entry)
+    const { data: providerProfile } = await supabase
+      .from("service_providers")
+      .select("id, application_status")
+      .eq("user_id", userId)
+      .maybeSingle();
+
+    if (providerProfile) {
+      setUserRole("provider");
+      setIsAdmin(false);
+      return "provider" as UserRole;
+    }
+
+    // Default to user role
+    setUserRole("user");
     setIsAdmin(false);
-    return role;
+    return "user" as UserRole;
   };
 
   useEffect(() => {
