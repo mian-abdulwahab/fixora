@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
 import { Button } from "@/components/ui/button";
@@ -21,9 +21,13 @@ import {
   Users, 
   Shield,
   CheckCircle2,
-  ArrowRight
+  ArrowRight,
+  Loader2
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
+import { useMutation } from "@tanstack/react-query";
 
 const benefits = [
   {
@@ -61,11 +65,15 @@ const categories = [
 
 const BecomeProvider = () => {
   const { toast } = useToast();
+  const { user, signUp } = useAuth();
+  const navigate = useNavigate();
+  const [isNewUser, setIsNewUser] = useState(!user);
   const [formData, setFormData] = useState({
     businessName: "",
     ownerName: "",
     email: "",
     phone: "",
+    password: "",
     category: "",
     experience: "",
     description: "",
@@ -77,13 +85,102 @@ const BecomeProvider = () => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  // Mutation for creating provider profile
+  const createProviderMutation = useMutation({
+    mutationFn: async (userId: string) => {
+      const { error } = await supabase
+        .from("service_providers")
+        .insert({
+          user_id: userId,
+          business_name: formData.businessName,
+          description: formData.description,
+          location: formData.location,
+          phone: formData.phone,
+          email: formData.email || user?.email,
+          application_status: "pending",
+          verified: false,
+          is_active: true,
+        });
+      
+      if (error) throw error;
+      
+      // Update user profile to provider role
+      await supabase
+        .from("profiles")
+        .update({ role: "provider" })
+        .eq("id", userId);
+    },
+    onSuccess: () => {
+      toast({
+        title: "Application Submitted!",
+        description: "Your application has been submitted for review. We'll notify you once it's approved (usually within 24-48 hours).",
+      });
+      navigate("/provider-dashboard");
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Submission Failed",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    toast({
-      title: "Application Submitted!",
-      description: "We'll review your application and get back to you within 24-48 hours.",
-    });
+    
+    if (!formData.agreeTerms) {
+      toast({
+        title: "Terms Required",
+        description: "Please agree to the terms and conditions.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      if (user) {
+        // User is already logged in, just create provider profile
+        await createProviderMutation.mutateAsync(user.id);
+      } else {
+        // New user - register first then create provider profile
+        if (!formData.password || formData.password.length < 6) {
+          toast({
+            title: "Password Required",
+            description: "Please enter a password with at least 6 characters.",
+            variant: "destructive",
+          });
+          return;
+        }
+
+        const { error } = await signUp(formData.email, formData.password, formData.ownerName, "provider");
+        
+        if (error) {
+          toast({
+            title: "Registration Failed",
+            description: error.message,
+            variant: "destructive",
+          });
+          return;
+        }
+
+        // Get the newly created user
+        const { data: { user: newUser } } = await supabase.auth.getUser();
+        
+        if (newUser) {
+          await createProviderMutation.mutateAsync(newUser.id);
+        }
+      }
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Something went wrong. Please try again.",
+        variant: "destructive",
+      });
+    }
   };
+
+  const isSubmitting = createProviderMutation.isPending;
 
   return (
     <div className="min-h-screen bg-background">
@@ -197,14 +294,28 @@ const BecomeProvider = () => {
                   Apply to Become a Provider
                 </h2>
                 <p className="text-muted-foreground">
-                  Fill out the form below and we'll get back to you within 24-48 hours.
+                  Fill out the form below and we'll review your application within 24-48 hours.
                 </p>
               </div>
 
               <form onSubmit={handleSubmit} className="bg-card rounded-2xl shadow-card p-8 space-y-6">
+                {/* Info Banner */}
+                <div className="p-4 bg-primary/5 border border-primary/20 rounded-lg mb-6">
+                  <div className="flex items-start gap-3">
+                    <CheckCircle2 className="w-5 h-5 text-primary mt-0.5" />
+                    <div>
+                      <p className="text-sm text-foreground font-medium">What happens next?</p>
+                      <p className="text-sm text-muted-foreground mt-1">
+                        After submitting, your application will be reviewed by our team. 
+                        Once approved, you'll receive a verified badge and become visible to customers.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-2">
-                    <Label htmlFor="businessName">Business Name</Label>
+                    <Label htmlFor="businessName">Business Name *</Label>
                     <Input
                       id="businessName"
                       name="businessName"
@@ -215,7 +326,7 @@ const BecomeProvider = () => {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="ownerName">Owner Name</Label>
+                    <Label htmlFor="ownerName">Owner Name *</Label>
                     <Input
                       id="ownerName"
                       name="ownerName"
@@ -229,7 +340,7 @@ const BecomeProvider = () => {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-2">
-                    <Label htmlFor="email">Email</Label>
+                    <Label htmlFor="email">Email *</Label>
                     <Input
                       id="email"
                       name="email"
@@ -238,10 +349,11 @@ const BecomeProvider = () => {
                       value={formData.email}
                       onChange={handleChange}
                       required
+                      disabled={!!user}
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="phone">Phone Number</Label>
+                    <Label htmlFor="phone">Phone Number *</Label>
                     <Input
                       id="phone"
                       name="phone"
@@ -254,9 +366,29 @@ const BecomeProvider = () => {
                   </div>
                 </div>
 
+                {/* Password field for new users */}
+                {!user && (
+                  <div className="space-y-2">
+                    <Label htmlFor="password">Password *</Label>
+                    <Input
+                      id="password"
+                      name="password"
+                      type="password"
+                      placeholder="Create a password (min 6 characters)"
+                      value={formData.password}
+                      onChange={handleChange}
+                      required
+                      minLength={6}
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      This will create your account on Fixora
+                    </p>
+                  </div>
+                )}
+
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-2">
-                    <Label>Service Category</Label>
+                    <Label>Service Category *</Label>
                     <Select
                       value={formData.category}
                       onValueChange={(value) => setFormData({ ...formData, category: value })}
@@ -282,13 +414,12 @@ const BecomeProvider = () => {
                       placeholder="e.g., 5"
                       value={formData.experience}
                       onChange={handleChange}
-                      required
                     />
                   </div>
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="location">Service Area</Label>
+                  <Label htmlFor="location">Service Area *</Label>
                   <Input
                     id="location"
                     name="location"
@@ -300,7 +431,7 @@ const BecomeProvider = () => {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="description">About Your Services</Label>
+                  <Label htmlFor="description">About Your Services *</Label>
                   <Textarea
                     id="description"
                     name="description"
@@ -332,9 +463,27 @@ const BecomeProvider = () => {
                   </label>
                 </div>
 
-                <Button type="submit" size="lg" className="w-full" disabled={!formData.agreeTerms}>
-                  Submit Application
+                <Button 
+                  type="submit" 
+                  size="lg" 
+                  className="w-full" 
+                  disabled={!formData.agreeTerms || isSubmitting}
+                >
+                  {isSubmitting ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Submitting Application...
+                    </>
+                  ) : (
+                    "Submit Application"
+                  )}
                 </Button>
+
+                {user && (
+                  <p className="text-center text-sm text-muted-foreground">
+                    Logged in as {user.email}
+                  </p>
+                )}
               </form>
             </div>
           </div>

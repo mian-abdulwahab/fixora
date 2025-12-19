@@ -402,6 +402,7 @@ export type Database = {
       }
       service_providers: {
         Row: {
+          application_status: string | null
           avatar_url: string | null
           banner_image_url: string | null
           business_name: string
@@ -415,6 +416,7 @@ export type Database = {
           longitude: number | null
           phone: string | null
           rating: number | null
+          rejection_reason: string | null
           total_jobs: number | null
           total_reviews: number | null
           updated_at: string | null
@@ -422,6 +424,7 @@ export type Database = {
           verified: boolean | null
         }
         Insert: {
+          application_status?: string | null
           avatar_url?: string | null
           banner_image_url?: string | null
           business_name: string
@@ -435,6 +438,7 @@ export type Database = {
           longitude?: number | null
           phone?: string | null
           rating?: number | null
+          rejection_reason?: string | null
           total_jobs?: number | null
           total_reviews?: number | null
           updated_at?: string | null
@@ -442,6 +446,7 @@ export type Database = {
           verified?: boolean | null
         }
         Update: {
+          application_status?: string | null
           avatar_url?: string | null
           banner_image_url?: string | null
           business_name?: string
@@ -455,6 +460,7 @@ export type Database = {
           longitude?: number | null
           phone?: string | null
           rating?: number | null
+          rejection_reason?: string | null
           total_jobs?: number | null
           total_reviews?: number | null
           updated_at?: string | null

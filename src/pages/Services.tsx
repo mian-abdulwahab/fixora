@@ -32,18 +32,25 @@ const Services = () => {
     verifiedOnly: false,
   });
 
-  // Fetch providers from database
+  // Fetch providers from database - only show verified/approved providers
   const { data: providers = [], isLoading } = useQuery({
-    queryKey: ["service-providers"],
+    queryKey: ["service-providers", filters.category],
     queryFn: async () => {
-      const { data, error } = await supabase
+      let query = supabase
         .from("service_providers")
         .select(`
           *,
-          services:services(*)
+          services:services(*),
+          provider_categories(
+            category_id,
+            service_categories(slug, name)
+          )
         `)
-        .eq("is_active", true);
+        .eq("is_active", true)
+        .eq("verified", true)
+        .order("rating", { ascending: false });
       
+      const { data, error } = await query;
       if (error) throw error;
       return data;
     },
@@ -64,7 +71,7 @@ const Services = () => {
   });
 
   const filteredProviders = useMemo(() => {
-    return providers.filter((provider) => {
+    return providers.filter((provider: any) => {
       // Text search
       const matchesSearch = 
         provider.business_name?.toLowerCase().includes(filters.searchQuery.toLowerCase()) ||
@@ -81,13 +88,18 @@ const Services = () => {
       const matchesVerified = !filters.verifiedOnly || provider.verified;
       
       // Price filter (check if any service falls within range)
-      const services = (provider as any).services || [];
+      const services = provider.services || [];
       const matchesPrice = services.length === 0 || services.some((s: any) => {
         const price = Number(s.price || 0);
         return price >= filters.priceRange[0] && price <= filters.priceRange[1];
       });
 
-      return matchesSearch && matchesLocation && matchesRating && matchesVerified && matchesPrice;
+      // Category filter
+      const providerCategories = provider.provider_categories || [];
+      const matchesCategory = filters.category === "all" || 
+        providerCategories.some((pc: any) => pc.service_categories?.slug === filters.category);
+
+      return matchesSearch && matchesLocation && matchesRating && matchesVerified && matchesPrice && matchesCategory;
     });
   }, [providers, filters]);
 

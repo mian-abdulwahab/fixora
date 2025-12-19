@@ -40,6 +40,8 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import ApplicationStatusBanner from "@/components/provider/ApplicationStatusBanner";
+import VerifiedBadge from "@/components/ui/VerifiedBadge";
 
 const sidebarLinks = [
   { icon: Home, label: "Dashboard", href: "/provider-dashboard", active: true },
@@ -367,13 +369,25 @@ const ProviderDashboard = () => {
             {/* Provider Dashboard Content */}
             {provider && (
               <>
+                {/* Application Status Banner */}
+                <ApplicationStatusBanner 
+                  status={(provider as any).application_status || "pending"} 
+                  rejectionReason={(provider as any).rejection_reason}
+                  providerId={provider.id}
+                />
+
                 {/* Header */}
                 <div className="mb-8">
-                  <h1 className="text-2xl md:text-3xl font-bold text-foreground mb-2">
-                    Welcome back, {provider.business_name}! 👋
-                  </h1>
+                  <div className="flex items-center gap-2 mb-2">
+                    <h1 className="text-2xl md:text-3xl font-bold text-foreground">
+                      Welcome back, {provider.business_name}!
+                    </h1>
+                    {provider.verified && <VerifiedBadge size="lg" />}
+                  </div>
                   <p className="text-muted-foreground">
-                    Manage your bookings, services, and grow your business.
+                    {provider.verified 
+                      ? "Manage your bookings, services, and grow your business."
+                      : "Complete your profile while waiting for verification."}
                   </p>
                 </div>
 
