@@ -190,11 +190,12 @@ export const useAdminStats = () => {
   return useQuery({
     queryKey: ["admin", "stats"],
     queryFn: async () => {
-      const [usersRes, providersRes, bookingsRes, categoriesRes] = await Promise.all([
+      const [usersRes, providersRes, bookingsRes, categoriesRes, pendingRes] = await Promise.all([
         supabase.from("profiles").select("id", { count: "exact", head: true }),
-        supabase.from("service_providers").select("id", { count: "exact", head: true }),
+        supabase.from("service_providers").select("id", { count: "exact", head: true }).eq("application_status", "approved"),
         supabase.from("bookings").select("id, total_amount, payment_status"),
         supabase.from("service_categories").select("id", { count: "exact", head: true }),
+        supabase.from("service_providers").select("id", { count: "exact", head: true }).eq("application_status", "pending"),
       ]);
 
       const bookings = bookingsRes.data || [];
@@ -208,6 +209,7 @@ export const useAdminStats = () => {
         totalBookings: bookings.length,
         totalCategories: categoriesRes.count || 0,
         totalRevenue,
+        pendingApplications: pendingRes.count || 0,
       };
     },
   });
