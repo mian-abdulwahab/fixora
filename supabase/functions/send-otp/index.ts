@@ -100,7 +100,7 @@ serve(async (req: Request): Promise<Response> => {
             subject: "Your Verification Code - Fixora",
           },
         ],
-        from: { email: "noreply@fixora.com", name: "Fixora" },
+        from: { email: "mianawphenomenal@gmail.com", name: "Fixora" },
         content: [
           {
             type: "text/html",
