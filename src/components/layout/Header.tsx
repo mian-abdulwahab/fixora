@@ -17,11 +17,12 @@ const Header = () => {
   const navigate = useNavigate();
   const { user, signOut, loading } = useAuth();
 
+  // Only show "Become a Provider" for non-logged-in users
   const navLinks = [
     { href: "/", label: "Home" },
     { href: "/services", label: "Services" },
     { href: "/how-it-works", label: "How It Works" },
-    { href: "/become-provider", label: "Become a Provider" },
+    ...(!user ? [{ href: "/register?role=provider", label: "Become a Provider" }] : []),
   ];
 
   const isActive = (path: string) => location.pathname === path;
@@ -50,7 +51,7 @@ const Header = () => {
                 key={link.href}
                 to={link.href}
                 className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-200 ${
-                  isActive(link.href)
+                  isActive(link.href.split("?")[0])
                     ? "text-primary bg-primary/10"
                     : "text-muted-foreground hover:text-foreground hover:bg-secondary"
                 }`}
@@ -125,7 +126,7 @@ const Header = () => {
                   key={link.href}
                   to={link.href}
                   className={`px-4 py-3 rounded-lg text-sm font-medium transition-colors duration-200 ${
-                    isActive(link.href)
+                    isActive(link.href.split("?")[0])
                       ? "text-primary bg-primary/10"
                       : "text-muted-foreground hover:text-foreground hover:bg-secondary"
                   }`}
