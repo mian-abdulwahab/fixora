@@ -5,13 +5,21 @@ import { Wrench, Mail, CheckCircle2, RefreshCw } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import {
+  InputOTP,
+  InputOTPGroup,
+  InputOTPSlot,
+} from "@/components/ui/input-otp";
 
 const VerifyEmail = () => {
   const { user, userRole, loading } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
   const [isResending, setIsResending] = useState(false);
+  const [isVerifying, setIsVerifying] = useState(false);
   const [emailVerified, setEmailVerified] = useState(false);
+  const [otpValue, setOtpValue] = useState("");
+  const [otpSent, setOtpSent] = useState(false);
 
   useEffect(() => {
     if (!loading && !user) {
@@ -19,11 +27,13 @@ const VerifyEmail = () => {
       return;
     }
 
-    // Check if email is verified
+    // Check if email is already verified
     if (user?.email_confirmed_at) {
       setEmailVerified(true);
-      // Update profile
       updateProfileVerification();
+    } else if (user && !otpSent) {
+      // Send OTP on mount if not already sent
+      sendOtp();
     }
   }, [user, loading, navigate]);
 
@@ -36,31 +46,110 @@ const VerifyEmail = () => {
       .eq("id", user.id);
   };
 
-  const handleResendEmail = async () => {
-    if (!user?.email) return;
-    
+  const sendOtp = async () => {
     setIsResending(true);
-    const { error } = await supabase.auth.resend({
-      type: "signup",
-      email: user.email,
-      options: {
-        emailRedirectTo: `${window.location.origin}/verify-email`,
-      },
-    });
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        toast({
+          title: "Session expired",
+          description: "Please login again.",
+          variant: "destructive",
+        });
+        navigate("/login");
+        return;
+      }
 
-    if (error) {
-      toast({
-        title: "Failed to resend",
-        description: error.message,
-        variant: "destructive",
+      const { data, error } = await supabase.functions.invoke("send-otp", {
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+        },
       });
-    } else {
+
+      if (error) {
+        console.error("Send OTP error:", error);
+        toast({
+          title: "Failed to send OTP",
+          description: error.message || "Please try again.",
+          variant: "destructive",
+        });
+      } else {
+        setOtpSent(true);
+        toast({
+          title: "OTP Sent!",
+          description: "Check your email for the 6-digit verification code.",
+        });
+      }
+    } catch (err) {
+      console.error("Send OTP exception:", err);
       toast({
-        title: "Email sent!",
-        description: "Check your inbox for the verification link.",
+        title: "Error",
+        description: "Failed to send verification code.",
+        variant: "destructive",
       });
     }
     setIsResending(false);
+  };
+
+  const handleVerifyOtp = async () => {
+    if (otpValue.length !== 6) {
+      toast({
+        title: "Invalid OTP",
+        description: "Please enter the complete 6-digit code.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsVerifying(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        toast({
+          title: "Session expired",
+          description: "Please login again.",
+          variant: "destructive",
+        });
+        navigate("/login");
+        return;
+      }
+
+      const { data, error } = await supabase.functions.invoke("verify-otp", {
+        body: { otp: otpValue },
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+        },
+      });
+
+      if (error) {
+        console.error("Verify OTP error:", error);
+        toast({
+          title: "Verification failed",
+          description: error.message || "Invalid or expired OTP.",
+          variant: "destructive",
+        });
+      } else if (data?.success) {
+        setEmailVerified(true);
+        toast({
+          title: "Email Verified!",
+          description: "Your email has been verified successfully.",
+        });
+      } else {
+        toast({
+          title: "Verification failed",
+          description: data?.error || "Invalid or expired OTP.",
+          variant: "destructive",
+        });
+      }
+    } catch (err) {
+      console.error("Verify OTP exception:", err);
+      toast({
+        title: "Error",
+        description: "Failed to verify code.",
+        variant: "destructive",
+      });
+    }
+    setIsVerifying(false);
   };
 
   const handleContinue = () => {
@@ -116,14 +205,48 @@ const VerifyEmail = () => {
               </div>
               <h1 className="text-2xl font-bold text-foreground mb-2">Verify Your Email</h1>
               <p className="text-muted-foreground mb-2">
-                We've sent a verification link to:
+                We've sent a 6-digit verification code to:
               </p>
               <p className="font-medium text-foreground mb-6">{user?.email}</p>
-              <p className="text-sm text-muted-foreground mb-6">
-                Click the link in the email to verify your account. If you don't see it, check your spam folder.
-              </p>
+              
+              <div className="flex justify-center mb-6">
+                <InputOTP
+                  maxLength={6}
+                  value={otpValue}
+                  onChange={(value) => setOtpValue(value)}
+                >
+                  <InputOTPGroup>
+                    <InputOTPSlot index={0} />
+                    <InputOTPSlot index={1} />
+                    <InputOTPSlot index={2} />
+                    <InputOTPSlot index={3} />
+                    <InputOTPSlot index={4} />
+                    <InputOTPSlot index={5} />
+                  </InputOTPGroup>
+                </InputOTP>
+              </div>
+
               <Button
-                onClick={handleResendEmail}
+                onClick={handleVerifyOtp}
+                className="w-full mb-3"
+                disabled={isVerifying || otpValue.length !== 6}
+              >
+                {isVerifying ? (
+                  <>
+                    <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                    Verifying...
+                  </>
+                ) : (
+                  "Verify Email"
+                )}
+              </Button>
+
+              <p className="text-sm text-muted-foreground mb-4">
+                Didn't receive the code? Check your spam folder or
+              </p>
+              
+              <Button
+                onClick={sendOtp}
                 variant="outline"
                 className="w-full"
                 disabled={isResending}
@@ -136,16 +259,9 @@ const VerifyEmail = () => {
                 ) : (
                   <>
                     <RefreshCw className="w-4 h-4 mr-2" />
-                    Resend Verification Email
+                    Resend Code
                   </>
                 )}
-              </Button>
-              <Button
-                onClick={() => window.location.reload()}
-                variant="ghost"
-                className="w-full mt-3"
-              >
-                I've verified my email
               </Button>
             </>
           )}
