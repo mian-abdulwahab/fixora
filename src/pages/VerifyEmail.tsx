@@ -20,6 +20,7 @@ const VerifyEmail = () => {
   const [emailVerified, setEmailVerified] = useState(false);
   const [otpValue, setOtpValue] = useState("");
   const [otpSent, setOtpSent] = useState(false);
+  const [cooldownSeconds, setCooldownSeconds] = useState(0);
 
   useEffect(() => {
     if (!loading && !user) {
@@ -50,6 +51,14 @@ const VerifyEmail = () => {
     
     checkVerification();
   }, [user, loading, navigate, otpSent]);
+
+  // Cooldown timer effect
+  useEffect(() => {
+    if (cooldownSeconds > 0) {
+      const timer = setTimeout(() => setCooldownSeconds(cooldownSeconds - 1), 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [cooldownSeconds]);
 
   const updateProfileVerification = async () => {
     if (!user?.id) return;
@@ -89,6 +98,7 @@ const VerifyEmail = () => {
         });
       } else {
         setOtpSent(true);
+        setCooldownSeconds(30);
         toast({
           title: "OTP Sent!",
           description: "Check your email for the 6-digit verification code.",
@@ -263,12 +273,17 @@ const VerifyEmail = () => {
                 onClick={sendOtp}
                 variant="outline"
                 className="w-full"
-                disabled={isResending}
+                disabled={isResending || cooldownSeconds > 0}
               >
                 {isResending ? (
                   <>
                     <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
                     Sending...
+                  </>
+                ) : cooldownSeconds > 0 ? (
+                  <>
+                    <RefreshCw className="w-4 h-4 mr-2" />
+                    Resend in {cooldownSeconds}s
                   </>
                 ) : (
                   <>
