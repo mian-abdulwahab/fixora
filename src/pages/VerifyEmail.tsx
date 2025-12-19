@@ -27,15 +27,29 @@ const VerifyEmail = () => {
       return;
     }
 
-    // Check if email is already verified
-    if (user?.email_confirmed_at) {
-      setEmailVerified(true);
-      updateProfileVerification();
-    } else if (user && !otpSent) {
-      // Send OTP on mount if not already sent
-      sendOtp();
-    }
-  }, [user, loading, navigate]);
+    // Check if email is already verified in profiles table
+    const checkVerification = async () => {
+      if (user?.id) {
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("email_verified")
+          .eq("id", user.id)
+          .single();
+        
+        if (profile?.email_verified) {
+          setEmailVerified(true);
+          return;
+        }
+      }
+      
+      // Send OTP on mount if not already sent and not verified
+      if (user && !otpSent) {
+        sendOtp();
+      }
+    };
+    
+    checkVerification();
+  }, [user, loading, navigate, otpSent]);
 
   const updateProfileVerification = async () => {
     if (!user?.id) return;
