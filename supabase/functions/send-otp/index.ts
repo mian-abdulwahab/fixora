@@ -16,9 +16,9 @@ serve(async (req: Request): Promise<Response> => {
   }
 
   try {
-    const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
-    if (!RESEND_API_KEY) {
-      console.error("RESEND_API_KEY not configured");
+    const SENDGRID_API_KEY = Deno.env.get("SENDGRID_API_KEY");
+    if (!SENDGRID_API_KEY) {
+      console.error("SENDGRID_API_KEY not configured");
       return new Response(
         JSON.stringify({ error: "Email service not configured" }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -86,47 +86,56 @@ serve(async (req: Request): Promise<Response> => {
       );
     }
 
-    // Send email with OTP using Resend API directly
-    const emailResponse = await fetch("https://api.resend.com/emails", {
+    // Send email with OTP using SendGrid API
+    const emailResponse = await fetch("https://api.sendgrid.com/v3/mail/send", {
       method: "POST",
       headers: {
-        "Authorization": `Bearer ${RESEND_API_KEY}`,
+        "Authorization": `Bearer ${SENDGRID_API_KEY}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        from: "Fixora <onboarding@resend.dev>",
-        to: [email],
-        subject: "Your Verification Code - Fixora",
-        html: `
-          <!DOCTYPE html>
-          <html>
-          <head>
-            <meta charset="utf-8">
-            <meta name="viewport" content="width=device-width, initial-scale=1.0">
-          </head>
-          <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 40px 20px; background-color: #f4f4f5;">
-            <div style="max-width: 400px; margin: 0 auto; background: white; border-radius: 16px; padding: 40px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
-              <div style="text-align: center; margin-bottom: 32px;">
-                <h1 style="color: #18181b; margin: 0; font-size: 24px;">Verify Your Email</h1>
-                <p style="color: #71717a; margin-top: 8px;">Enter this code to complete your registration</p>
-              </div>
-              <div style="background: linear-gradient(135deg, #6366f1, #8b5cf6); border-radius: 12px; padding: 24px; text-align: center; margin-bottom: 24px;">
-                <span style="font-size: 36px; font-weight: bold; color: white; letter-spacing: 8px;">${otpCode}</span>
-              </div>
-              <p style="color: #71717a; font-size: 14px; text-align: center; margin: 0;">
-                This code expires in <strong>10 minutes</strong>.<br>
-                If you didn't request this code, please ignore this email.
-              </p>
-            </div>
-          </body>
-          </html>
-        `,
+        personalizations: [
+          {
+            to: [{ email: email }],
+            subject: "Your Verification Code - Fixora",
+          },
+        ],
+        from: { email: "noreply@fixora.com", name: "Fixora" },
+        content: [
+          {
+            type: "text/html",
+            value: `
+              <!DOCTYPE html>
+              <html>
+              <head>
+                <meta charset="utf-8">
+                <meta name="viewport" content="width=device-width, initial-scale=1.0">
+              </head>
+              <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 40px 20px; background-color: #f4f4f5;">
+                <div style="max-width: 400px; margin: 0 auto; background: white; border-radius: 16px; padding: 40px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+                  <div style="text-align: center; margin-bottom: 32px;">
+                    <h1 style="color: #18181b; margin: 0; font-size: 24px;">Verify Your Email</h1>
+                    <p style="color: #71717a; margin-top: 8px;">Enter this code to complete your registration</p>
+                  </div>
+                  <div style="background: linear-gradient(135deg, #6366f1, #8b5cf6); border-radius: 12px; padding: 24px; text-align: center; margin-bottom: 24px;">
+                    <span style="font-size: 36px; font-weight: bold; color: white; letter-spacing: 8px;">${otpCode}</span>
+                  </div>
+                  <p style="color: #71717a; font-size: 14px; text-align: center; margin: 0;">
+                    This code expires in <strong>10 minutes</strong>.<br>
+                    If you didn't request this code, please ignore this email.
+                  </p>
+                </div>
+              </body>
+              </html>
+            `,
+          },
+        ],
       }),
     });
 
     if (!emailResponse.ok) {
       const errorData = await emailResponse.text();
-      console.error("Email send error:", errorData);
+      console.error("SendGrid error:", errorData);
       return new Response(
         JSON.stringify({ error: "Failed to send email" }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
