@@ -45,16 +45,27 @@ export const useAllProviders = () => {
   return useQuery({
     queryKey: ["admin", "providers"],
     queryFn: async () => {
-      const { data, error } = await supabase
+      // Fetch providers without the problematic join
+      const { data: providers, error } = await supabase
         .from("service_providers")
-        .select(`
-          *,
-          profiles:user_id (name, email)
-        `)
+        .select("*")
         .order("created_at", { ascending: false });
       
       if (error) throw error;
-      return data;
+      
+      // Fetch profiles separately
+      const userIds = [...new Set(providers?.map(p => p.user_id) || [])];
+      const { data: profiles } = await supabase
+        .from("profiles")
+        .select("id, name, email")
+        .in("id", userIds);
+      
+      const profileMap = new Map(profiles?.map(p => [p.id, p]) || []);
+      
+      return providers?.map(provider => ({
+        ...provider,
+        profile: profileMap.get(provider.user_id) || null,
+      })) || [];
     },
   });
 };
