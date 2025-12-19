@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Menu, X, Wrench, User, LogIn, LogOut, LayoutDashboard } from "lucide-react";
+import { Menu, X, Wrench, User, LogIn, LogOut, LayoutDashboard, UserCircle, Search, Calendar, Settings } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import {
   DropdownMenu,
@@ -15,21 +15,63 @@ const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
-  const { user, signOut, loading } = useAuth();
+  const { user, userRole, signOut, loading } = useAuth();
 
-  // Only show "Become a Provider" for non-logged-in users
-  const navLinks = [
-    { href: "/", label: "Home" },
-    { href: "/services", label: "Services" },
-    { href: "/how-it-works", label: "How It Works" },
-    ...(!user ? [{ href: "/register?role=provider", label: "Become a Provider" }] : []),
-  ];
+  // Role-based navigation links
+  const getNavLinks = () => {
+    if (!user) {
+      // Guest users - default navbar
+      return [
+        { href: "/", label: "Home" },
+        { href: "/services", label: "Services" },
+        { href: "/how-it-works", label: "How It Works" },
+        { href: "/register?role=provider", label: "Become a Provider" },
+      ];
+    }
 
+    if (userRole === "provider") {
+      // Provider navbar
+      return [
+        { href: "/", label: "Home" },
+        { href: "/provider-dashboard", label: "Dashboard" },
+        { href: "/provider-dashboard/profile", label: "My Profile" },
+      ];
+    }
+
+    if (userRole === "admin") {
+      // Admin navbar
+      return [
+        { href: "/", label: "Home" },
+        { href: "/admin", label: "Admin Panel" },
+      ];
+    }
+
+    // Customer navbar
+    return [
+      { href: "/", label: "Home" },
+      { href: "/services", label: "Find Services" },
+      { href: "/dashboard", label: "My Bookings" },
+      { href: "/dashboard/profile", label: "My Profile" },
+    ];
+  };
+
+  const navLinks = getNavLinks();
   const isActive = (path: string) => location.pathname === path;
 
   const handleSignOut = async () => {
     await signOut();
     navigate("/");
+  };
+
+  const getDashboardLink = () => {
+    if (userRole === "provider") return "/provider-dashboard";
+    if (userRole === "admin") return "/admin";
+    return "/dashboard";
+  };
+
+  const getProfileLink = () => {
+    if (userRole === "provider") return "/provider-dashboard/profile";
+    return "/dashboard/profile";
   };
 
   return (
@@ -75,11 +117,19 @@ const Header = () => {
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-48">
                   <DropdownMenuItem asChild>
-                    <Link to="/dashboard" className="flex items-center cursor-pointer">
+                    <Link to={getDashboardLink()} className="flex items-center cursor-pointer">
                       <LayoutDashboard className="w-4 h-4 mr-2" />
                       Dashboard
                     </Link>
                   </DropdownMenuItem>
+                  {userRole !== "admin" && (
+                    <DropdownMenuItem asChild>
+                      <Link to={getProfileLink()} className="flex items-center cursor-pointer">
+                        <UserCircle className="w-4 h-4 mr-2" />
+                        My Profile
+                      </Link>
+                    </DropdownMenuItem>
+                  )}
                   <DropdownMenuSeparator />
                   <DropdownMenuItem 
                     onClick={handleSignOut}
@@ -137,14 +187,10 @@ const Header = () => {
               ))}
               <div className="flex gap-3 mt-4 px-4">
                 {user ? (
-                  <>
-                    <Button variant="outline" size="sm" className="flex-1" asChild>
-                      <Link to="/dashboard" onClick={() => setIsMenuOpen(false)}>Dashboard</Link>
-                    </Button>
-                    <Button variant="destructive" size="sm" className="flex-1" onClick={() => { handleSignOut(); setIsMenuOpen(false); }}>
-                      Sign Out
-                    </Button>
-                  </>
+                  <Button variant="destructive" size="sm" className="flex-1" onClick={() => { handleSignOut(); setIsMenuOpen(false); }}>
+                    <LogOut className="w-4 h-4 mr-2" />
+                    Sign Out
+                  </Button>
                 ) : (
                   <>
                     <Button variant="outline" size="sm" className="flex-1" asChild>
