@@ -409,6 +409,7 @@ export type Database = {
           created_at: string | null
           description: string | null
           email: string | null
+          experience_years: number | null
           id: string
           is_active: boolean | null
           latitude: number | null
@@ -417,6 +418,7 @@ export type Database = {
           phone: string | null
           rating: number | null
           rejection_reason: string | null
+          skills: string[] | null
           total_jobs: number | null
           total_reviews: number | null
           updated_at: string | null
@@ -431,6 +433,7 @@ export type Database = {
           created_at?: string | null
           description?: string | null
           email?: string | null
+          experience_years?: number | null
           id?: string
           is_active?: boolean | null
           latitude?: number | null
@@ -439,6 +442,7 @@ export type Database = {
           phone?: string | null
           rating?: number | null
           rejection_reason?: string | null
+          skills?: string[] | null
           total_jobs?: number | null
           total_reviews?: number | null
           updated_at?: string | null
@@ -453,6 +457,7 @@ export type Database = {
           created_at?: string | null
           description?: string | null
           email?: string | null
+          experience_years?: number | null
           id?: string
           is_active?: boolean | null
           latitude?: number | null
@@ -461,6 +466,7 @@ export type Database = {
           phone?: string | null
           rating?: number | null
           rejection_reason?: string | null
+          skills?: string[] | null
           total_jobs?: number | null
           total_reviews?: number | null
           updated_at?: string | null

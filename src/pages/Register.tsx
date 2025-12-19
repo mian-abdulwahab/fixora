@@ -1,14 +1,25 @@
 import { useState, useEffect } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Wrench, Mail, Lock, Eye, EyeOff, User, Phone, Shield, Key } from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
+import { Wrench, Mail, Lock, Eye, EyeOff, User, Phone, Shield, Key, Briefcase, Clock } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
+import { Badge } from "@/components/ui/badge";
+
+const SKILL_SUGGESTIONS = [
+  "Plumbing", "Electrical", "HVAC", "Carpentry", "Painting", 
+  "Landscaping", "Roofing", "Flooring", "Cleaning", "Moving",
+  "Appliance Repair", "Pest Control", "Security Systems", "Pool Maintenance"
+];
 
 const Register = () => {
+  const [searchParams] = useSearchParams();
+  const initialRole = (searchParams.get("role") as "user" | "provider" | "admin") || "user";
+  
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -16,14 +27,29 @@ const Register = () => {
     password: "",
     confirmPassword: "",
     adminKey: "",
+    // Provider-specific fields
+    businessName: "",
+    description: "",
+    location: "",
+    experienceYears: "",
+    skills: [] as string[],
+    skillInput: "",
   });
   const [showPassword, setShowPassword] = useState(false);
   const [showAdminKey, setShowAdminKey] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [role, setRole] = useState<"user" | "provider" | "admin">("user");
+  const [role, setRole] = useState<"user" | "provider" | "admin">(initialRole);
   const navigate = useNavigate();
   const { toast } = useToast();
   const { signUp, user, userRole, loading } = useAuth();
+
+  // Update role when URL param changes
+  useEffect(() => {
+    const urlRole = searchParams.get("role") as "user" | "provider" | "admin";
+    if (urlRole && ["user", "provider", "admin"].includes(urlRole)) {
+      setRole(urlRole);
+    }
+  }, [searchParams]);
 
   // Redirect if already logged in based on role
   useEffect(() => {
@@ -45,8 +71,26 @@ const Register = () => {
     }
   };
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
+
+  const handleAddSkill = (skill: string) => {
+    const trimmedSkill = skill.trim();
+    if (trimmedSkill && !formData.skills.includes(trimmedSkill) && formData.skills.length < 10) {
+      setFormData({ 
+        ...formData, 
+        skills: [...formData.skills, trimmedSkill],
+        skillInput: ""
+      });
+    }
+  };
+
+  const handleRemoveSkill = (skillToRemove: string) => {
+    setFormData({
+      ...formData,
+      skills: formData.skills.filter(s => s !== skillToRemove)
+    });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -68,6 +112,26 @@ const Register = () => {
         variant: "destructive",
       });
       return;
+    }
+
+    // Provider-specific validations
+    if (role === "provider") {
+      if (!formData.businessName.trim()) {
+        toast({
+          title: "Business name required",
+          description: "Please enter your business or professional name.",
+          variant: "destructive",
+        });
+        return;
+      }
+      if (formData.skills.length === 0) {
+        toast({
+          title: "Skills required",
+          description: "Please add at least one skill.",
+          variant: "destructive",
+        });
+        return;
+      }
     }
 
     setIsLoading(true);
@@ -131,10 +195,49 @@ const Register = () => {
       return;
     }
 
-    toast({
-      title: "Account created!",
-      description: "Please check your email to verify your account.",
-    });
+    // If registering as provider, wait for the user to be created then create provider profile
+    if (role === "provider") {
+      // Get the newly created user
+      const { data: { user: newUser } } = await supabase.auth.getUser();
+      
+      if (newUser) {
+        const { error: providerError } = await supabase
+          .from("service_providers")
+          .insert({
+            user_id: newUser.id,
+            business_name: formData.businessName.trim(),
+            description: formData.description.trim() || null,
+            location: formData.location.trim() || null,
+            email: formData.email,
+            phone: formData.phone || null,
+            experience_years: parseInt(formData.experienceYears) || 0,
+            skills: formData.skills,
+            application_status: "pending",
+            verified: false,
+            is_active: false,
+          });
+
+        if (providerError) {
+          console.error("Error creating provider profile:", providerError);
+          toast({
+            title: "Profile creation issue",
+            description: "Account created but provider profile couldn't be set up. Please contact support.",
+            variant: "destructive",
+          });
+        } else {
+          toast({
+            title: "Application submitted!",
+            description: "Your provider application has been submitted for review. You'll be notified once approved.",
+          });
+        }
+      }
+    } else {
+      toast({
+        title: "Account created!",
+        description: "Please check your email to verify your account.",
+      });
+    }
+
     setIsLoading(false);
     
     // Redirect to email verification page
@@ -160,13 +263,14 @@ const Register = () => {
         </div>
         <div className="text-center relative z-10">
           <h2 className="text-4xl font-bold text-primary-foreground mb-4">
-            Join the Fixora <br /> Community
+            {role === "provider" ? "Grow Your Business" : "Join the Fixora"} <br /> 
+            {role === "provider" ? "with Fixora" : "Community"}
           </h2>
           <p className="text-primary-foreground/80 text-lg max-w-md">
             {role === "admin"
               ? "Manage the platform, users, and service providers with full administrative access."
               : role === "provider"
-              ? "Grow your business by connecting with homeowners who need your services."
+              ? "Connect with homeowners who need your services. Your application will be reviewed by our team for verification."
               : "Get access to thousands of verified service providers in your area."}
           </p>
         </div>
@@ -185,7 +289,9 @@ const Register = () => {
 
           <h1 className="text-3xl font-bold text-foreground mb-2">Create an account</h1>
           <p className="text-muted-foreground mb-6">
-            Sign up to get started with Fixora
+            {role === "provider" 
+              ? "Register as a service provider to join our platform" 
+              : "Sign up to get started with Fixora"}
           </p>
 
           {/* Role Toggle */}
@@ -272,9 +378,134 @@ const Register = () => {
                   value={formData.phone}
                   onChange={handleChange}
                   className="pl-10 h-12"
+                  required={role === "provider"}
                 />
               </div>
             </div>
+
+            {/* Provider-specific fields */}
+            {role === "provider" && (
+              <>
+                <div className="space-y-2">
+                  <Label htmlFor="businessName">Business / Professional Name *</Label>
+                  <div className="relative">
+                    <Briefcase className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+                    <Input
+                      id="businessName"
+                      name="businessName"
+                      type="text"
+                      placeholder="e.g., John's Plumbing Services"
+                      value={formData.businessName}
+                      onChange={handleChange}
+                      className="pl-10 h-12"
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="location">Location / Service Area</Label>
+                  <Input
+                    id="location"
+                    name="location"
+                    type="text"
+                    placeholder="e.g., New York, NY"
+                    value={formData.location}
+                    onChange={handleChange}
+                    className="h-12"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="experienceYears">Years of Experience</Label>
+                  <div className="relative">
+                    <Clock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+                    <Input
+                      id="experienceYears"
+                      name="experienceYears"
+                      type="number"
+                      min="0"
+                      max="50"
+                      placeholder="e.g., 5"
+                      value={formData.experienceYears}
+                      onChange={handleChange}
+                      className="pl-10 h-12"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Skills / Services Offered *</Label>
+                  <div className="flex gap-2">
+                    <Input
+                      name="skillInput"
+                      type="text"
+                      placeholder="Type a skill and press Enter"
+                      value={formData.skillInput}
+                      onChange={handleChange}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          e.preventDefault();
+                          handleAddSkill(formData.skillInput);
+                        }
+                      }}
+                      className="h-10"
+                    />
+                    <Button 
+                      type="button" 
+                      variant="outline" 
+                      onClick={() => handleAddSkill(formData.skillInput)}
+                      disabled={!formData.skillInput.trim()}
+                    >
+                      Add
+                    </Button>
+                  </div>
+                  
+                  {/* Skill suggestions */}
+                  <div className="flex flex-wrap gap-1 mt-2">
+                    {SKILL_SUGGESTIONS.filter(s => !formData.skills.includes(s)).slice(0, 6).map(skill => (
+                      <button
+                        key={skill}
+                        type="button"
+                        onClick={() => handleAddSkill(skill)}
+                        className="px-2 py-1 text-xs bg-secondary text-muted-foreground rounded hover:bg-secondary/80 transition-colors"
+                      >
+                        + {skill}
+                      </button>
+                    ))}
+                  </div>
+
+                  {/* Selected skills */}
+                  {formData.skills.length > 0 && (
+                    <div className="flex flex-wrap gap-2 mt-2">
+                      {formData.skills.map(skill => (
+                        <Badge 
+                          key={skill} 
+                          variant="secondary"
+                          className="cursor-pointer hover:bg-destructive/20"
+                          onClick={() => handleRemoveSkill(skill)}
+                        >
+                          {skill} ×
+                        </Badge>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="description">About Your Services</Label>
+                  <Textarea
+                    id="description"
+                    name="description"
+                    placeholder="Describe your services, experience, and what makes you stand out..."
+                    value={formData.description}
+                    onChange={handleChange}
+                    rows={3}
+                    className="resize-none"
+                  />
+                </div>
+              </>
+            )}
 
             <div className="space-y-2">
               <Label htmlFor="password">Password</Label>
@@ -351,8 +582,19 @@ const Register = () => {
               </div>
             )}
 
+            {role === "provider" && (
+              <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg text-sm text-amber-800">
+                <strong>Note:</strong> Your application will be reviewed by our team. You'll be notified once approved and will then be visible to customers.
+              </div>
+            )}
+
             <Button type="submit" className="w-full h-12" disabled={isLoading}>
-              {isLoading ? "Creating account..." : `Create ${role === "admin" ? "Admin" : role === "provider" ? "Provider" : "Customer"} Account`}
+              {isLoading 
+                ? "Creating account..." 
+                : role === "provider"
+                  ? "Submit Application"
+                  : `Create ${role === "admin" ? "Admin" : "Customer"} Account`
+              }
             </Button>
           </form>
 

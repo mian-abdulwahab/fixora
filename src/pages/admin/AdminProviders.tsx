@@ -1,10 +1,11 @@
 import { useState } from "react";
 import { useAllProviders, useUpdateProvider } from "@/hooks/useAdmin";
 import { format } from "date-fns";
-import { Search, CheckCircle, XCircle, Star, MapPin, Clock, AlertCircle, Filter } from "lucide-react";
+import { Search, CheckCircle, XCircle, Star, MapPin, Clock, AlertCircle, Eye } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import {
   Table,
@@ -28,32 +29,52 @@ import {
   TabsList,
   TabsTrigger,
 } from "@/components/ui/tabs";
-import { Badge } from "@/components/ui/badge";
 
-const AdminProviders = () => {
+interface Provider {
+  id: string;
+  business_name: string;
+  email: string | null;
+  phone: string | null;
+  location: string | null;
+  description: string | null;
+  avatar_url: string | null;
+  rating: number | null;
+  total_reviews: number | null;
+  is_active: boolean | null;
+  verified: boolean | null;
+  application_status: string | null;
+  rejection_reason: string | null;
+  experience_years: number | null;
+  skills: string[] | null;
+  created_at: string | null;
+  profiles?: { name: string | null; email: string | null } | null;
+}
+
+const AdminProviders: React.FC = () => {
   const { data: providers = [], isLoading } = useAllProviders();
   const updateProvider = useUpdateProvider();
   const [search, setSearch] = useState("");
   const [activeTab, setActiveTab] = useState<"all" | "pending" | "approved" | "rejected">("pending");
   const [rejectDialogOpen, setRejectDialogOpen] = useState(false);
+  const [detailsDialogOpen, setDetailsDialogOpen] = useState(false);
   const [selectedProvider, setSelectedProvider] = useState<any>(null);
   const [rejectionReason, setRejectionReason] = useState("");
 
-  const filteredProviders = providers.filter(provider => {
+  const filteredProviders = providers.filter((provider: any) => {
     const matchesSearch = 
       provider.business_name?.toLowerCase().includes(search.toLowerCase()) ||
       provider.email?.toLowerCase().includes(search.toLowerCase());
     
     if (activeTab === "all") return matchesSearch;
     
-    const status = (provider as any).application_status || "pending";
+    const status = provider.application_status || "pending";
     return matchesSearch && status === activeTab;
   });
 
   // Count providers by status
-  const pendingCount = providers.filter(p => (p as any).application_status === "pending" || !(p as any).application_status).length;
-  const approvedCount = providers.filter(p => (p as any).application_status === "approved").length;
-  const rejectedCount = providers.filter(p => (p as any).application_status === "rejected").length;
+  const pendingCount = providers.filter((p: any) => p.application_status === "pending" || !p.application_status).length;
+  const approvedCount = providers.filter((p: any) => p.application_status === "approved").length;
+  const rejectedCount = providers.filter((p: any) => p.application_status === "rejected").length;
 
   const handleApprove = async (provider: any) => {
     try {
@@ -62,6 +83,7 @@ const AdminProviders = () => {
         updates: { 
           verified: true, 
           application_status: "approved",
+          is_active: true,
           rejection_reason: null 
         } 
       });
@@ -80,6 +102,7 @@ const AdminProviders = () => {
         updates: { 
           verified: false, 
           application_status: "rejected",
+          is_active: false,
           rejection_reason: rejectionReason || "Your application was not approved. Please contact support for more information."
         } 
       });
@@ -153,7 +176,7 @@ const AdminProviders = () => {
         </div>
       )}
 
-      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)}>
+      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as typeof activeTab)}>
         <TabsList className="mb-6">
           <TabsTrigger value="pending" className="relative">
             Pending
@@ -191,10 +214,9 @@ const AdminProviders = () => {
             <TableHeader>
               <TableRow>
                 <TableHead>Business</TableHead>
-                <TableHead>Location</TableHead>
-                <TableHead>Rating</TableHead>
-                <TableHead>Application Status</TableHead>
-                <TableHead>Active</TableHead>
+                <TableHead>Experience</TableHead>
+                <TableHead>Skills</TableHead>
+                <TableHead>Status</TableHead>
                 <TableHead>Applied</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
@@ -202,12 +224,12 @@ const AdminProviders = () => {
             <TableBody>
               {filteredProviders.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                  <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
                     {activeTab === "pending" ? "No pending applications" : "No providers found"}
                   </TableCell>
                 </TableRow>
               ) : (
-                filteredProviders.map((provider: any) => (
+                filteredProviders.map((provider) => (
                   <TableRow key={provider.id}>
                     <TableCell>
                       <div className="flex items-center gap-3">
@@ -232,39 +254,54 @@ const AdminProviders = () => {
                             )}
                           </div>
                           <p className="text-sm text-muted-foreground">{provider.email}</p>
+                          {provider.location && (
+                            <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                              <MapPin className="w-3 h-3" />
+                              {provider.location}
+                            </div>
+                          )}
                         </div>
                       </div>
                     </TableCell>
                     <TableCell>
-                      <div className="flex items-center gap-1 text-muted-foreground">
-                        <MapPin className="w-4 h-4" />
-                        {provider.location || "—"}
-                      </div>
+                      <span className="text-foreground">
+                        {provider.experience_years ? `${provider.experience_years} years` : "—"}
+                      </span>
                     </TableCell>
                     <TableCell>
-                      <div className="flex items-center gap-1">
-                        <Star className="w-4 h-4 text-accent fill-accent" />
-                        <span>{Number(provider.rating || 0).toFixed(1)}</span>
-                        <span className="text-muted-foreground">({provider.total_reviews || 0})</span>
+                      <div className="flex flex-wrap gap-1 max-w-[200px]">
+                        {provider.skills?.slice(0, 3).map(skill => (
+                          <Badge key={skill} variant="secondary" className="text-xs">
+                            {skill}
+                          </Badge>
+                        ))}
+                        {(provider.skills?.length || 0) > 3 && (
+                          <Badge variant="outline" className="text-xs">
+                            +{(provider.skills?.length || 0) - 3}
+                          </Badge>
+                        )}
+                        {!provider.skills?.length && <span className="text-muted-foreground">—</span>}
                       </div>
                     </TableCell>
                     <TableCell>
                       {getStatusBadge(provider)}
-                    </TableCell>
-                    <TableCell>
-                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                        provider.is_active 
-                          ? "bg-emerald-100 text-emerald-700" 
-                          : "bg-muted text-muted-foreground"
-                      }`}>
-                        {provider.is_active ? "Active" : "Inactive"}
-                      </span>
                     </TableCell>
                     <TableCell className="text-muted-foreground">
                       {provider.created_at ? format(new Date(provider.created_at), "MMM d, yyyy") : "—"}
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex items-center justify-end gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            setSelectedProvider(provider);
+                            setDetailsDialogOpen(true);
+                          }}
+                        >
+                          <Eye className="w-4 h-4 mr-1" />
+                          View
+                        </Button>
                         {provider.application_status !== "approved" && (
                           <Button
                             variant="default"
@@ -307,6 +344,112 @@ const AdminProviders = () => {
           </Table>
         </div>
       </Tabs>
+
+      {/* Provider Details Dialog */}
+      <Dialog open={detailsDialogOpen} onOpenChange={setDetailsDialogOpen}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Provider Application Details</DialogTitle>
+            <DialogDescription>
+              Review the complete application from {selectedProvider?.business_name}
+            </DialogDescription>
+          </DialogHeader>
+          
+          {selectedProvider && (
+            <div className="space-y-4">
+              <div className="flex items-center gap-4">
+                {selectedProvider.avatar_url ? (
+                  <img 
+                    src={selectedProvider.avatar_url} 
+                    alt={selectedProvider.business_name}
+                    className="w-16 h-16 rounded-full object-cover"
+                  />
+                ) : (
+                  <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
+                    <span className="text-primary font-bold text-xl">
+                      {selectedProvider.business_name?.charAt(0) || "P"}
+                    </span>
+                  </div>
+                )}
+                <div>
+                  <h3 className="font-semibold text-lg">{selectedProvider.business_name}</h3>
+                  {getStatusBadge(selectedProvider)}
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4 text-sm">
+                <div>
+                  <p className="text-muted-foreground">Email</p>
+                  <p className="font-medium">{selectedProvider.email || "—"}</p>
+                </div>
+                <div>
+                  <p className="text-muted-foreground">Phone</p>
+                  <p className="font-medium">{selectedProvider.phone || "—"}</p>
+                </div>
+                <div>
+                  <p className="text-muted-foreground">Location</p>
+                  <p className="font-medium">{selectedProvider.location || "—"}</p>
+                </div>
+                <div>
+                  <p className="text-muted-foreground">Experience</p>
+                  <p className="font-medium">
+                    {selectedProvider.experience_years ? `${selectedProvider.experience_years} years` : "—"}
+                  </p>
+                </div>
+              </div>
+
+              <div>
+                <p className="text-muted-foreground text-sm mb-2">Skills</p>
+                <div className="flex flex-wrap gap-2">
+                  {selectedProvider.skills?.map(skill => (
+                    <Badge key={skill} variant="secondary">{skill}</Badge>
+                  )) || <span className="text-muted-foreground">No skills listed</span>}
+                </div>
+              </div>
+
+              <div>
+                <p className="text-muted-foreground text-sm mb-1">Description</p>
+                <p className="text-foreground text-sm">
+                  {selectedProvider.description || "No description provided"}
+                </p>
+              </div>
+
+              <div>
+                <p className="text-muted-foreground text-sm">Applied on</p>
+                <p className="font-medium">
+                  {selectedProvider.created_at 
+                    ? format(new Date(selectedProvider.created_at), "MMMM d, yyyy 'at' h:mm a") 
+                    : "—"}
+                </p>
+              </div>
+
+              {selectedProvider.rejection_reason && (
+                <div className="p-3 bg-destructive/10 rounded-lg">
+                  <p className="text-sm text-destructive font-medium">Rejection Reason:</p>
+                  <p className="text-sm text-destructive">{selectedProvider.rejection_reason}</p>
+                </div>
+              )}
+            </div>
+          )}
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDetailsDialogOpen(false)}>
+              Close
+            </Button>
+            {selectedProvider?.application_status !== "approved" && (
+              <Button 
+                className="bg-emerald-600 hover:bg-emerald-700"
+                onClick={() => {
+                  handleApprove(selectedProvider!);
+                  setDetailsDialogOpen(false);
+                }}
+              >
+                Approve
+              </Button>
+            )}
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Rejection Dialog */}
       <Dialog open={rejectDialogOpen} onOpenChange={setRejectDialogOpen}>
