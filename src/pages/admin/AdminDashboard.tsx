@@ -20,7 +20,7 @@ const adminLinks = [
   { icon: FolderTree, label: "Categories", href: "/admin/categories" },
 ];
 
-const AdminDashboard = () => {
+const AdminDashboard: React.FC = () => {
   const { user, signOut } = useAuth();
   const { data: isAdmin, isLoading } = useIsAdmin();
   const location = useLocation();

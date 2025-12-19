@@ -1,7 +1,8 @@
-import { Users, Briefcase, Calendar, FolderTree, DollarSign, TrendingUp } from "lucide-react";
+import { Users, Briefcase, Calendar, FolderTree, DollarSign, TrendingUp, Clock } from "lucide-react";
 import { useAdminStats } from "@/hooks/useAdmin";
+import { Link } from "react-router-dom";
 
-const AdminOverview = () => {
+const AdminOverview: React.FC = () => {
   const { data: stats, isLoading } = useAdminStats();
 
   if (isLoading) {
@@ -14,9 +15,9 @@ const AdminOverview = () => {
 
   const statCards = [
     { label: "Total Users", value: stats?.totalUsers || 0, icon: Users, color: "text-blue-600 bg-blue-100" },
-    { label: "Service Providers", value: stats?.totalProviders || 0, icon: Briefcase, color: "text-emerald-600 bg-emerald-100" },
+    { label: "Approved Providers", value: stats?.totalProviders || 0, icon: Briefcase, color: "text-emerald-600 bg-emerald-100" },
+    { label: "Pending Applications", value: stats?.pendingApplications || 0, icon: Clock, color: "text-amber-600 bg-amber-100", highlight: (stats?.pendingApplications || 0) > 0 },
     { label: "Total Bookings", value: stats?.totalBookings || 0, icon: Calendar, color: "text-purple-600 bg-purple-100" },
-    { label: "Categories", value: stats?.totalCategories || 0, icon: FolderTree, color: "text-orange-600 bg-orange-100" },
     { label: "Total Revenue", value: `$${(stats?.totalRevenue || 0).toLocaleString()}`, icon: DollarSign, color: "text-primary bg-primary/10" },
   ];
 
@@ -29,7 +30,7 @@ const AdminOverview = () => {
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4 mb-8">
         {statCards.map((stat) => (
-          <div key={stat.label} className="bg-card rounded-xl shadow-card p-5">
+          <div key={stat.label} className={`bg-card rounded-xl shadow-card p-5 ${stat.highlight ? 'ring-2 ring-amber-500' : ''}`}>
             <div className="flex items-center justify-between mb-3">
               <span className="text-muted-foreground text-sm">{stat.label}</span>
               <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${stat.color}`}>
@@ -37,6 +38,11 @@ const AdminOverview = () => {
               </div>
             </div>
             <p className="text-2xl font-bold text-foreground">{stat.value}</p>
+            {stat.highlight && stat.label === "Pending Applications" && (
+              <Link to="/admin/providers" className="text-xs text-amber-600 hover:underline mt-1 block">
+                Review now →
+              </Link>
+            )}
           </div>
         ))}
       </div>
