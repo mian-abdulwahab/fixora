@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Wrench, Mail, Lock, Eye, EyeOff, User, Phone, Shield, Key, Briefcase, Clock } from "lucide-react";
+import CitySelect from "@/components/ui/CitySelect";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -404,15 +405,11 @@ const Register = () => {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="location">Location / Service Area</Label>
-                  <Input
-                    id="location"
-                    name="location"
-                    type="text"
-                    placeholder="e.g., New York, NY"
+                  <Label htmlFor="location">City / Service Area</Label>
+                  <CitySelect
                     value={formData.location}
-                    onChange={handleChange}
-                    className="h-12"
+                    onChange={(value) => setFormData({ ...formData, location: value })}
+                    placeholder="Select your city..."
                   />
                 </div>
 

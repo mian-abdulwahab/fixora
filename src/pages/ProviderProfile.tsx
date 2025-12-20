@@ -14,6 +14,7 @@ import {
   User, Mail, Phone, MapPin, Camera, Save, ArrowLeft, Briefcase, 
   Clock, Image as ImageIcon
 } from "lucide-react";
+import CitySelect from "@/components/ui/CitySelect";
 
 const SKILL_SUGGESTIONS = [
   "Plumbing", "Electrical", "HVAC", "Carpentry", "Painting", 
@@ -285,17 +286,12 @@ const ProviderProfile = () => {
 
                 {/* Location */}
                 <div className="space-y-2">
-                  <Label htmlFor="location">Service Area / Location</Label>
-                  <div className="relative">
-                    <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-                    <Input
-                      id="location"
-                      value={formData.location}
-                      onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-                      className="pl-10"
-                      placeholder="e.g., Sahiwal, Punjab"
-                    />
-                  </div>
+                  <Label htmlFor="location">City / Service Area</Label>
+                  <CitySelect
+                    value={formData.location}
+                    onChange={(value) => setFormData({ ...formData, location: value })}
+                    placeholder="Select your city..."
+                  />
                 </div>
 
                 {/* Experience Years */}

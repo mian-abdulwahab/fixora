@@ -42,6 +42,7 @@ import {
 } from "@/components/ui/dialog";
 import ApplicationStatusBanner from "@/components/provider/ApplicationStatusBanner";
 import VerifiedBadge from "@/components/ui/VerifiedBadge";
+import CitySelect from "@/components/ui/CitySelect";
 
 const sidebarLinks = [
   { icon: Home, label: "Dashboard", href: "/provider-dashboard", active: true },
@@ -328,12 +329,11 @@ const ProviderDashboard = () => {
                         />
                       </div>
                       <div>
-                        <Label htmlFor="location">Location</Label>
-                        <Input
-                          id="location"
+                        <Label htmlFor="location">City</Label>
+                        <CitySelect
                           value={businessData.location}
-                          onChange={(e) => setBusinessData({ ...businessData, location: e.target.value })}
-                          placeholder="e.g., New York, NY"
+                          onChange={(value) => setBusinessData({ ...businessData, location: value })}
+                          placeholder="Select your city..."
                         />
                       </div>
                       <div className="grid grid-cols-2 gap-4">
@@ -392,7 +392,7 @@ const ProviderDashboard = () => {
                 </div>
 
                 {/* Stats */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
                   <div className="bg-card rounded-xl shadow-card p-5">
                     <div className="flex items-center justify-between mb-2">
                       <span className="text-muted-foreground text-sm">Pending</span>
@@ -406,6 +406,13 @@ const ProviderDashboard = () => {
                       <Calendar className="w-5 h-5 text-primary" />
                     </div>
                     <p className="text-2xl font-bold text-foreground">{upcomingBookings.length}</p>
+                  </div>
+                  <div className="bg-card rounded-xl shadow-card p-5">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-muted-foreground text-sm">Jobs Completed</span>
+                      <CheckCircle className="w-5 h-5 text-emerald-600" />
+                    </div>
+                    <p className="text-2xl font-bold text-foreground">{provider.total_jobs || 0}</p>
                   </div>
                   <div className="bg-card rounded-xl shadow-card p-5">
                     <div className="flex items-center justify-between mb-2">

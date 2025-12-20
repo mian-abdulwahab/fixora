@@ -7,6 +7,7 @@ import { Star, CheckCircle2, MapPin } from "lucide-react";
 import SearchFilters, { SearchFiltersState } from "@/components/services/SearchFilters";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { matchProvider, fuzzyMatch } from "@/lib/searchUtils";
 
 const categories = [
   { id: "all", name: "All Services" },
@@ -72,14 +73,12 @@ const Services = () => {
 
   const filteredProviders = useMemo(() => {
     return providers.filter((provider: any) => {
-      // Text search
-      const matchesSearch = 
-        provider.business_name?.toLowerCase().includes(filters.searchQuery.toLowerCase()) ||
-        provider.description?.toLowerCase().includes(filters.searchQuery.toLowerCase());
+      // Fuzzy text search - matches business name, description, and skills
+      const matchesSearch = matchProvider(provider, filters.searchQuery);
       
-      // Location filter
+      // Location filter with fuzzy matching
       const matchesLocation = !filters.location || 
-        provider.location?.toLowerCase().includes(filters.location.toLowerCase());
+        fuzzyMatch(provider.location || '', filters.location);
       
       // Rating filter
       const matchesRating = Number(provider.rating || 0) >= filters.minRating;
@@ -94,10 +93,16 @@ const Services = () => {
         return price >= filters.priceRange[0] && price <= filters.priceRange[1];
       });
 
-      // Category filter
+      // Category filter with fuzzy matching
       const providerCategories = provider.provider_categories || [];
       const matchesCategory = filters.category === "all" || 
-        providerCategories.some((pc: any) => pc.service_categories?.slug === filters.category);
+        providerCategories.some((pc: any) => {
+          const catSlug = pc.service_categories?.slug || '';
+          const catName = pc.service_categories?.name || '';
+          return catSlug === filters.category || 
+                 fuzzyMatch(catSlug, filters.category) || 
+                 fuzzyMatch(catName, filters.category);
+        });
 
       return matchesSearch && matchesLocation && matchesRating && matchesVerified && matchesPrice && matchesCategory;
     });

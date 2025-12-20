@@ -70,9 +70,10 @@ const CustomerMessages = () => {
             ) : conversations.length > 0 ? (
               <div className="divide-y divide-border">
                 {conversations.map((provider: any) => (
-                  <div 
+                  <Link 
                     key={provider.id} 
-                    className="p-4 hover:bg-secondary/50 transition-colors cursor-pointer"
+                    to={`/dashboard/chat/${provider.id}`}
+                    className="p-4 hover:bg-secondary/50 transition-colors cursor-pointer block"
                   >
                     <div className="flex items-center gap-4">
                       <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center shrink-0 overflow-hidden">
@@ -96,7 +97,7 @@ const CustomerMessages = () => {
                       </div>
                       <MessageSquare className="w-5 h-5 text-muted-foreground" />
                     </div>
-                  </div>
+                  </Link>
                 ))}
               </div>
             ) : (
@@ -113,9 +114,6 @@ const CustomerMessages = () => {
             )}
           </div>
 
-          <p className="text-center text-sm text-muted-foreground mt-6">
-            Full messaging functionality coming soon!
-          </p>
         </div>
       </main>
     </div>
