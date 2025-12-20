@@ -25,6 +25,11 @@ import AdminCategories from "./pages/admin/AdminCategories";
 import ProviderServices from "./pages/provider/ProviderServices";
 import ProviderBookings from "./pages/provider/ProviderBookings";
 import ProviderEarnings from "./pages/provider/ProviderEarnings";
+import CustomerBookings from "./pages/dashboard/CustomerBookings";
+import CustomerNotifications from "./pages/dashboard/CustomerNotifications";
+import CustomerPayments from "./pages/dashboard/CustomerPayments";
+import CustomerMessages from "./pages/dashboard/CustomerMessages";
+import CustomerSettings from "./pages/dashboard/CustomerSettings";
 
 const queryClient = new QueryClient();
 
@@ -44,6 +49,11 @@ const App = () => (
             <Route path="/provider/:id" element={<ProviderDetail />} />
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/dashboard/profile" element={<CustomerProfile />} />
+            <Route path="/dashboard/bookings" element={<CustomerBookings />} />
+            <Route path="/dashboard/notifications" element={<CustomerNotifications />} />
+            <Route path="/dashboard/payments" element={<CustomerPayments />} />
+            <Route path="/dashboard/messages" element={<CustomerMessages />} />
+            <Route path="/dashboard/settings" element={<CustomerSettings />} />
             <Route path="/provider-dashboard" element={<ProviderDashboard />} />
             <Route path="/provider-dashboard/profile" element={<ProviderProfile />} />
             <Route path="/provider-dashboard/services" element={<ProviderServices />} />

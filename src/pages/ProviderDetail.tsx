@@ -146,6 +146,19 @@ const ProviderDetail = () => {
         .single();
 
       if (error) throw error;
+
+      // Create notification for provider
+      if (provider?.user_id) {
+        await supabase.from("notifications").insert({
+          user_id: provider.user_id,
+          title: "New Booking Request! 📅",
+          message: `You have a new booking request for "${service.title}" on ${format(selectedDate, "MMM d, yyyy")} at ${selectedTime}.`,
+          type: "booking",
+          related_id: data.id,
+          related_type: "booking",
+        });
+      }
+
       return data;
     },
     onSuccess: () => {

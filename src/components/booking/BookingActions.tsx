@@ -4,6 +4,7 @@ import { CheckCircle, Star, XCircle } from "lucide-react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/contexts/AuthContext";
 import ReviewDialog from "./ReviewDialog";
 import {
   AlertDialog,
@@ -22,9 +23,15 @@ interface BookingActionsProps {
     id: string;
     status: string;
     provider_id: string;
+    user_id?: string;
     service_providers?: {
       business_name: string;
+      user_id?: string;
     };
+    services?: {
+      title: string;
+      price?: number;
+    } | null;
   };
   isProvider?: boolean;
   hasReview?: boolean;
@@ -33,26 +40,42 @@ interface BookingActionsProps {
 const BookingActions = ({ booking, isProvider = false, hasReview = false }: BookingActionsProps) => {
   const [isReviewOpen, setIsReviewOpen] = useState(false);
   const { toast } = useToast();
+  const { user } = useAuth();
   const queryClient = useQueryClient();
+
+  // Helper to create notification
+  const createNotification = async (userId: string, title: string, message: string, type: string) => {
+    await supabase.from("notifications").insert({
+      user_id: userId,
+      title,
+      message,
+      type,
+      related_id: booking.id,
+      related_type: "booking",
+    });
+  };
 
   const updateStatusMutation = useMutation({
     mutationFn: async (newStatus: string) => {
-      const updateData: any = { status: newStatus };
+      const updateData: Record<string, unknown> = { status: newStatus };
       
-      // If completing, also increment total_jobs for provider
+      // If completing, also increment total_jobs and update payment
       if (newStatus === "completed") {
-        // First update the booking
+        // Update the booking with payment status
         const { error } = await supabase
           .from("bookings")
-          .update(updateData)
+          .update({ 
+            status: newStatus,
+            payment_status: "paid" 
+          })
           .eq("id", booking.id);
         
         if (error) throw error;
 
-        // Then increment total_jobs
+        // Increment total_jobs for provider
         const { data: provider } = await supabase
           .from("service_providers")
-          .select("total_jobs")
+          .select("total_jobs, user_id")
           .eq("id", booking.provider_id)
           .single();
         
@@ -61,6 +84,15 @@ const BookingActions = ({ booking, isProvider = false, hasReview = false }: Book
             .from("service_providers")
             .update({ total_jobs: (provider.total_jobs || 0) + 1 })
             .eq("id", booking.provider_id);
+
+          // Notify provider about job completion and earnings
+          const amount = booking.services?.price || 0;
+          await createNotification(
+            provider.user_id,
+            "Job Completed! 🎉",
+            `You completed the job "${booking.services?.title || 'Service'}". $${amount} has been added to your earnings.`,
+            "success"
+          );
         }
       } else {
         const { error } = await supabase
@@ -69,6 +101,48 @@ const BookingActions = ({ booking, isProvider = false, hasReview = false }: Book
           .eq("id", booking.id);
         
         if (error) throw error;
+      }
+
+      // Create notifications based on status change
+      if (newStatus === "confirmed" && booking.user_id) {
+        await createNotification(
+          booking.user_id,
+          "Booking Accepted! ✅",
+          `Your booking with ${booking.service_providers?.business_name || "the provider"} has been accepted.`,
+          "success"
+        );
+      } else if (newStatus === "cancelled") {
+        if (isProvider && booking.user_id) {
+          await createNotification(
+            booking.user_id,
+            "Booking Declined",
+            `Unfortunately, ${booking.service_providers?.business_name || "the provider"} couldn't accept your booking.`,
+            "warning"
+          );
+        } else if (!isProvider) {
+          // Get provider user_id to notify them
+          const { data: provider } = await supabase
+            .from("service_providers")
+            .select("user_id")
+            .eq("id", booking.provider_id)
+            .single();
+          
+          if (provider) {
+            await createNotification(
+              provider.user_id,
+              "Booking Cancelled",
+              `A customer cancelled their booking for "${booking.services?.title || 'Service'}".`,
+              "warning"
+            );
+          }
+        }
+      } else if (newStatus === "in_progress" && booking.user_id) {
+        await createNotification(
+          booking.user_id,
+          "Job Started! 🔧",
+          `${booking.service_providers?.business_name || "Your provider"} has started working on your job.`,
+          "booking"
+        );
       }
     },
     onSuccess: (_, newStatus) => {
@@ -81,6 +155,7 @@ const BookingActions = ({ booking, isProvider = false, hasReview = false }: Book
       toast({ title: messages[newStatus] || "Booking updated!" });
       queryClient.invalidateQueries({ queryKey: ["my-bookings"] });
       queryClient.invalidateQueries({ queryKey: ["provider-bookings"] });
+      queryClient.invalidateQueries({ queryKey: ["notifications"] });
     },
     onError: (error: Error) => {
       toast({
