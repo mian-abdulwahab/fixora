@@ -22,7 +22,6 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
 import BookingActions from "@/components/booking/BookingActions";
-import { format } from "date-fns";
 
 const sidebarLinks = [
   { icon: Home, label: "Dashboard", href: "/dashboard", active: true },
