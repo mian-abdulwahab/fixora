@@ -216,6 +216,8 @@ const ProviderBookings = () => {
                             id: booking.id,
                             status: booking.status || "pending",
                             provider_id: booking.provider_id,
+                            user_id: booking.user_id,
+                            services: booking.services,
                           }} 
                           isProvider={true}
                         />
