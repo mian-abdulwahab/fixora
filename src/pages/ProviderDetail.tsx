@@ -307,94 +307,101 @@ const ProviderDetail = () => {
                     </div>
 
                     <div className="flex gap-3">
-                      <Dialog open={isBookingOpen} onOpenChange={setIsBookingOpen}>
-                        <DialogTrigger asChild>
-                          <Button size="lg">
-                            <CalendarIcon className="w-4 h-4 mr-2" />
-                            Book Now
-                          </Button>
-                        </DialogTrigger>
-                        <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
-                          <DialogHeader>
-                            <DialogTitle>Book a Service</DialogTitle>
-                            <DialogDescription>
-                              Schedule an appointment with {provider.business_name}
-                            </DialogDescription>
-                          </DialogHeader>
-                          <form onSubmit={handleBooking} className="space-y-4 mt-4">
-                            <div className="space-y-2">
-                              <Label>Select Service *</Label>
-                              <Select value={selectedService} onValueChange={setSelectedService}>
-                                <SelectTrigger>
-                                  <SelectValue placeholder="Choose a service" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  {services.map((service) => (
-                                    <SelectItem key={service.id} value={service.id}>
-                                      {service.title} (${Number(service.price).toFixed(0)})
-                                    </SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
-                            </div>
-
-                            <div className="space-y-2">
-                              <Label>Select Date *</Label>
-                              <Calendar
-                                mode="single"
-                                selected={selectedDate}
-                                onSelect={setSelectedDate}
-                                disabled={(date) => date < new Date()}
-                                className="rounded-md border"
-                              />
-                            </div>
-
-                            <div className="space-y-2">
-                              <Label>Select Time *</Label>
-                              <Select value={selectedTime} onValueChange={setSelectedTime}>
-                                <SelectTrigger>
-                                  <SelectValue placeholder="Choose a time slot" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  {timeSlots.map((time) => (
-                                    <SelectItem key={time} value={time}>
-                                      {time}
-                                    </SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
-                            </div>
-
-                            <div className="space-y-2">
-                              <Label>Your Address *</Label>
-                              <Input
-                                placeholder="Enter your address"
-                                value={address}
-                                onChange={(e) => setAddress(e.target.value)}
-                                required
-                              />
-                            </div>
-
-                            <div className="space-y-2">
-                              <Label>Work Description / Notes</Label>
-                              <Textarea
-                                placeholder="Describe the work needed or any special requirements..."
-                                value={notes}
-                                onChange={(e) => setNotes(e.target.value)}
-                                rows={3}
-                              />
-                            </div>
-
-                            <Button 
-                              type="submit" 
-                              className="w-full"
-                              disabled={createBookingMutation.isPending}
-                            >
-                              {createBookingMutation.isPending ? "Submitting..." : "Confirm Booking"}
+                      {services.length === 0 ? (
+                        <Button size="lg" disabled variant="secondary">
+                          <CalendarIcon className="w-4 h-4 mr-2" />
+                          No Services Available
+                        </Button>
+                      ) : (
+                        <Dialog open={isBookingOpen} onOpenChange={setIsBookingOpen}>
+                          <DialogTrigger asChild>
+                            <Button size="lg">
+                              <CalendarIcon className="w-4 h-4 mr-2" />
+                              Book Now
                             </Button>
-                          </form>
-                        </DialogContent>
-                      </Dialog>
+                          </DialogTrigger>
+                          <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
+                            <DialogHeader>
+                              <DialogTitle>Book a Service</DialogTitle>
+                              <DialogDescription>
+                                Schedule an appointment with {provider.business_name}
+                              </DialogDescription>
+                            </DialogHeader>
+                            <form onSubmit={handleBooking} className="space-y-4 mt-4">
+                              <div className="space-y-2">
+                                <Label>Select Service *</Label>
+                                <Select value={selectedService} onValueChange={setSelectedService}>
+                                  <SelectTrigger>
+                                    <SelectValue placeholder="Choose a service" />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    {services.map((service) => (
+                                      <SelectItem key={service.id} value={service.id}>
+                                        {service.title} (${Number(service.price).toFixed(0)})
+                                      </SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                              </div>
+
+                              <div className="space-y-2">
+                                <Label>Select Date *</Label>
+                                <Calendar
+                                  mode="single"
+                                  selected={selectedDate}
+                                  onSelect={setSelectedDate}
+                                  disabled={(date) => date < new Date()}
+                                  className="rounded-md border"
+                                />
+                              </div>
+
+                              <div className="space-y-2">
+                                <Label>Select Time *</Label>
+                                <Select value={selectedTime} onValueChange={setSelectedTime}>
+                                  <SelectTrigger>
+                                    <SelectValue placeholder="Choose a time slot" />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    {timeSlots.map((time) => (
+                                      <SelectItem key={time} value={time}>
+                                        {time}
+                                      </SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                              </div>
+
+                              <div className="space-y-2">
+                                <Label>Your Address *</Label>
+                                <Input
+                                  placeholder="Enter your address"
+                                  value={address}
+                                  onChange={(e) => setAddress(e.target.value)}
+                                  required
+                                />
+                              </div>
+
+                              <div className="space-y-2">
+                                <Label>Work Description / Notes</Label>
+                                <Textarea
+                                  placeholder="Describe the work needed or any special requirements..."
+                                  value={notes}
+                                  onChange={(e) => setNotes(e.target.value)}
+                                  rows={3}
+                                />
+                              </div>
+
+                              <Button 
+                                type="submit" 
+                                className="w-full"
+                                disabled={createBookingMutation.isPending}
+                              >
+                                {createBookingMutation.isPending ? "Submitting..." : "Confirm Booking"}
+                              </Button>
+                            </form>
+                          </DialogContent>
+                        </Dialog>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -456,7 +463,13 @@ const ProviderDetail = () => {
                     ))}
                   </div>
                 ) : (
-                  <p className="text-muted-foreground">No services listed yet.</p>
+                  <div className="text-center py-8">
+                    <CalendarIcon className="w-12 h-12 text-muted-foreground/50 mx-auto mb-3" />
+                    <p className="text-muted-foreground font-medium">No services available yet</p>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      This provider hasn't added any services. Check back later!
+                    </p>
+                  </div>
                 )}
               </section>
 
