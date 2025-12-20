@@ -32,7 +32,7 @@ interface Conversation {
 
 const CustomerChat = () => {
   const { providerId } = useParams();
-  const [selectedConversation, setSelectedConversation] = useState<string | null>(providerId || null);
+  const [selectedConversation, setSelectedConversation] = useState<string | null>(null);
   const [newMessage, setNewMessage] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const { user } = useAuth();
@@ -107,23 +107,34 @@ const CustomerChat = () => {
     enabled: !!user?.id,
   });
 
-  // If providerId is passed, find the provider's user_id
+  // If providerId is passed, resolve it to the provider's user_id (for messaging)
   useEffect(() => {
-    const fetchProviderUserId = async () => {
-      if (providerId && !selectedConversation) {
-        const { data } = await supabase
-          .from("service_providers")
-          .select("user_id")
-          .eq("id", providerId)
-          .single();
-        
-        if (data) {
-          setSelectedConversation(data.user_id);
-        }
+    const resolveConversationId = async () => {
+      if (!providerId || selectedConversation) return;
+
+      // If the route already contains a conversation user_id, use it directly
+      if (conversations.some((c) => c.id === providerId)) {
+        setSelectedConversation(providerId);
+        return;
+      }
+
+      // Otherwise, assume it's a provider record id and resolve to provider.user_id
+      const { data, error } = await supabase
+        .from("service_providers")
+        .select("user_id")
+        .eq("id", providerId)
+        .maybeSingle();
+
+      if (!error && data?.user_id) {
+        setSelectedConversation(data.user_id);
+      } else {
+        // Fallback (keeps UX responsive even if provider lookup fails)
+        setSelectedConversation(providerId);
       }
     };
-    fetchProviderUserId();
-  }, [providerId, selectedConversation]);
+
+    resolveConversationId();
+  }, [providerId, selectedConversation, conversations]);
 
   // Fetch messages for selected conversation
   const { data: messages = [] } = useQuery({

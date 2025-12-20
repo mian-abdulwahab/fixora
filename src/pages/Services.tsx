@@ -41,7 +41,7 @@ const Services = () => {
         .from("service_providers")
         .select(`
           *,
-          services:services(*),
+          services:services(*, service_categories(slug, name)),
           provider_categories(
             category_id,
             service_categories(slug, name)
@@ -93,15 +93,29 @@ const Services = () => {
         return price >= filters.priceRange[0] && price <= filters.priceRange[1];
       });
 
-      // Category filter with fuzzy matching
+      // Category filter (supports either provider_categories OR service.category)
       const providerCategories = provider.provider_categories || [];
-      const matchesCategory = filters.category === "all" || 
+      const providerServices = provider.services || [];
+      const matchesCategory =
+        filters.category === "all" ||
         providerCategories.some((pc: any) => {
-          const catSlug = pc.service_categories?.slug || '';
-          const catName = pc.service_categories?.name || '';
-          return catSlug === filters.category || 
-                 fuzzyMatch(catSlug, filters.category) || 
-                 fuzzyMatch(catName, filters.category);
+          const catSlug = pc.service_categories?.slug || "";
+          const catName = pc.service_categories?.name || "";
+          return (
+            catSlug === filters.category ||
+            fuzzyMatch(catSlug, filters.category) ||
+            fuzzyMatch(catName, filters.category)
+          );
+        }) ||
+        providerServices.some((s: any) => {
+          const catSlug = s.service_categories?.slug || "";
+          const catName = s.service_categories?.name || "";
+          return (
+            catSlug === filters.category ||
+            fuzzyMatch(catSlug, filters.category) ||
+            fuzzyMatch(catName, filters.category) ||
+            fuzzyMatch(s.title || "", filters.category)
+          );
         });
 
       return matchesSearch && matchesLocation && matchesRating && matchesVerified && matchesPrice && matchesCategory;

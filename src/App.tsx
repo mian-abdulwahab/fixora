@@ -31,7 +31,6 @@ import ProviderSettings from "./pages/provider/ProviderSettings";
 import CustomerBookings from "./pages/dashboard/CustomerBookings";
 import CustomerNotifications from "./pages/dashboard/CustomerNotifications";
 import CustomerPayments from "./pages/dashboard/CustomerPayments";
-import CustomerMessages from "./pages/dashboard/CustomerMessages";
 import CustomerSettings from "./pages/dashboard/CustomerSettings";
 import CustomerChat from "./pages/dashboard/CustomerChat";
 
@@ -56,7 +55,7 @@ const App = () => (
             <Route path="/dashboard/bookings" element={<CustomerBookings />} />
             <Route path="/dashboard/notifications" element={<CustomerNotifications />} />
             <Route path="/dashboard/payments" element={<CustomerPayments />} />
-            <Route path="/dashboard/messages" element={<CustomerMessages />} />
+            <Route path="/dashboard/messages" element={<CustomerChat />} />
             <Route path="/dashboard/settings" element={<CustomerSettings />} />
             <Route path="/dashboard/chat/:providerId?" element={<CustomerChat />} />
             <Route path="/provider-dashboard" element={<ProviderDashboard />} />

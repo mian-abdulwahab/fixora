@@ -458,7 +458,7 @@ export type Database = {
           rating: number | null
           rejection_reason: string | null
           skills: string[] | null
-          total_jobs: number | null
+          total_jobs: number
           total_reviews: number | null
           updated_at: string | null
           user_id: string
@@ -482,7 +482,7 @@ export type Database = {
           rating?: number | null
           rejection_reason?: string | null
           skills?: string[] | null
-          total_jobs?: number | null
+          total_jobs?: number
           total_reviews?: number | null
           updated_at?: string | null
           user_id: string
@@ -506,7 +506,7 @@ export type Database = {
           rating?: number | null
           rejection_reason?: string | null
           skills?: string[] | null
-          total_jobs?: number | null
+          total_jobs?: number
           total_reviews?: number | null
           updated_at?: string | null
           user_id?: string
