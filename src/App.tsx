@@ -25,11 +25,15 @@ import AdminCategories from "./pages/admin/AdminCategories";
 import ProviderServices from "./pages/provider/ProviderServices";
 import ProviderBookings from "./pages/provider/ProviderBookings";
 import ProviderEarnings from "./pages/provider/ProviderEarnings";
+import ProviderMessages from "./pages/provider/ProviderMessages";
+import ProviderNotifications from "./pages/provider/ProviderNotifications";
+import ProviderSettings from "./pages/provider/ProviderSettings";
 import CustomerBookings from "./pages/dashboard/CustomerBookings";
 import CustomerNotifications from "./pages/dashboard/CustomerNotifications";
 import CustomerPayments from "./pages/dashboard/CustomerPayments";
 import CustomerMessages from "./pages/dashboard/CustomerMessages";
 import CustomerSettings from "./pages/dashboard/CustomerSettings";
+import CustomerChat from "./pages/dashboard/CustomerChat";
 
 const queryClient = new QueryClient();
 
@@ -54,11 +58,15 @@ const App = () => (
             <Route path="/dashboard/payments" element={<CustomerPayments />} />
             <Route path="/dashboard/messages" element={<CustomerMessages />} />
             <Route path="/dashboard/settings" element={<CustomerSettings />} />
+            <Route path="/dashboard/chat/:providerId?" element={<CustomerChat />} />
             <Route path="/provider-dashboard" element={<ProviderDashboard />} />
             <Route path="/provider-dashboard/profile" element={<ProviderProfile />} />
             <Route path="/provider-dashboard/services" element={<ProviderServices />} />
             <Route path="/provider-dashboard/bookings" element={<ProviderBookings />} />
             <Route path="/provider-dashboard/earnings" element={<ProviderEarnings />} />
+            <Route path="/provider-dashboard/messages" element={<ProviderMessages />} />
+            <Route path="/provider-dashboard/notifications" element={<ProviderNotifications />} />
+            <Route path="/provider-dashboard/settings" element={<ProviderSettings />} />
             <Route path="/how-it-works" element={<HowItWorks />} />
             <Route path="/become-provider" element={<Navigate to="/register?role=provider" replace />} />
             
