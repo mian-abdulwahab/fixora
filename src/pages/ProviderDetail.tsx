@@ -307,6 +307,16 @@ const ProviderDetail = () => {
                     </div>
 
                     <div className="flex gap-3">
+                      {user && (
+                        <Button 
+                          size="lg" 
+                          variant="outline"
+                          onClick={() => navigate(`/dashboard/chat/${id}`)}
+                        >
+                          <MessageSquare className="w-4 h-4 mr-2" />
+                          Message
+                        </Button>
+                      )}
                       {services.length === 0 ? (
                         <Button size="lg" disabled variant="secondary">
                           <CalendarIcon className="w-4 h-4 mr-2" />

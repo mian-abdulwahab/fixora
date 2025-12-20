@@ -19,6 +19,7 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import { Search, MapPin, Star, SlidersHorizontal, Filter, X } from "lucide-react";
+import CitySelect from "@/components/ui/CitySelect";
 
 export interface SearchFiltersState {
   searchQuery: string;
@@ -81,14 +82,11 @@ const SearchFilters = ({ filters, onFiltersChange, categories }: SearchFiltersPr
           />
         </div>
         
-        <div className="relative flex-1 md:flex-none md:w-64">
-          <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-          <Input
-            type="text"
-            placeholder="Enter location..."
+        <div className="flex-1 md:flex-none md:w-64">
+          <CitySelect
             value={filters.location}
-            onChange={(e) => updateFilter("location", e.target.value)}
-            className="pl-12 h-12 bg-card"
+            onChange={(value) => updateFilter("location", value)}
+            placeholder="Select city..."
           />
         </div>
 
