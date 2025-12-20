@@ -72,18 +72,26 @@ const BookingActions = ({ booking, isProvider = false, hasReview = false }: Book
         
         if (error) throw error;
 
-        // Increment total_jobs for provider
-        const { data: provider } = await supabase
+        // Increment total_jobs for provider using RPC or direct update
+        const { data: provider, error: providerError } = await supabase
           .from("service_providers")
           .select("total_jobs, user_id")
           .eq("id", booking.provider_id)
           .single();
         
+        if (providerError) {
+          console.error("Error fetching provider:", providerError);
+        }
+        
         if (provider) {
-          await supabase
+          const { error: updateError } = await supabase
             .from("service_providers")
             .update({ total_jobs: (provider.total_jobs || 0) + 1 })
             .eq("id", booking.provider_id);
+          
+          if (updateError) {
+            console.error("Error updating total_jobs:", updateError);
+          }
 
           // Notify provider about job completion and earnings
           const amount = booking.services?.price || 0;

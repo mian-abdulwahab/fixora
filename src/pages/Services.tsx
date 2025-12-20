@@ -239,6 +239,25 @@ const Services = () => {
                         )}
                       </div>
 
+                      {/* Skills */}
+                      {provider.skills && provider.skills.length > 0 && (
+                        <div className="flex flex-wrap gap-1.5 mb-3">
+                          {provider.skills.slice(0, 3).map((skill: string, index: number) => (
+                            <span
+                              key={index}
+                              className="px-2 py-0.5 text-xs rounded-full bg-primary/10 text-primary"
+                            >
+                              {skill}
+                            </span>
+                          ))}
+                          {provider.skills.length > 3 && (
+                            <span className="px-2 py-0.5 text-xs rounded-full bg-muted text-muted-foreground">
+                              +{provider.skills.length - 3}
+                            </span>
+                          )}
+                        </div>
+                      )}
+
                       <div className="flex items-center justify-between pt-4 border-t border-border">
                         <span className="text-sm text-muted-foreground">
                           <span className="font-semibold text-foreground">
