@@ -232,6 +232,30 @@ const Register = () => {
           });
         }
       }
+    } else if (role === "admin") {
+      // For admin registration, assign admin role server-side after signup
+      const { data: { user: newUser } } = await supabase.auth.getUser();
+      
+      if (newUser) {
+        // Call edge function with userId to assign admin role server-side
+        const { data: roleData, error: roleError } = await supabase.functions.invoke("verify-admin-key", {
+          body: { adminKey: formData.adminKey, userId: newUser.id },
+        });
+
+        if (roleError || !roleData?.roleAssigned) {
+          console.error("Error assigning admin role:", roleError);
+          toast({
+            title: "Admin role assignment issue",
+            description: "Account created but admin role couldn't be assigned. Please contact support.",
+            variant: "destructive",
+          });
+        } else {
+          toast({
+            title: "Admin account created!",
+            description: "Your admin account has been set up successfully.",
+          });
+        }
+      }
     } else {
       toast({
         title: "Account created!",
