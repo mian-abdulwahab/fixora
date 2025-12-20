@@ -22,6 +22,9 @@ import AdminUsers from "./pages/admin/AdminUsers";
 import AdminProviders from "./pages/admin/AdminProviders";
 import AdminBookings from "./pages/admin/AdminBookings";
 import AdminCategories from "./pages/admin/AdminCategories";
+import ProviderServices from "./pages/provider/ProviderServices";
+import ProviderBookings from "./pages/provider/ProviderBookings";
+import ProviderEarnings from "./pages/provider/ProviderEarnings";
 
 const queryClient = new QueryClient();
 
@@ -43,6 +46,9 @@ const App = () => (
             <Route path="/dashboard/profile" element={<CustomerProfile />} />
             <Route path="/provider-dashboard" element={<ProviderDashboard />} />
             <Route path="/provider-dashboard/profile" element={<ProviderProfile />} />
+            <Route path="/provider-dashboard/services" element={<ProviderServices />} />
+            <Route path="/provider-dashboard/bookings" element={<ProviderBookings />} />
+            <Route path="/provider-dashboard/earnings" element={<ProviderEarnings />} />
             <Route path="/how-it-works" element={<HowItWorks />} />
             <Route path="/become-provider" element={<Navigate to="/register?role=provider" replace />} />
             

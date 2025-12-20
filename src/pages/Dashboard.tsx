@@ -18,6 +18,10 @@ import {
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useMyBookings } from "@/hooks/useBookings";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { format } from "date-fns";
+import BookingActions from "@/components/booking/BookingActions";
 import { format } from "date-fns";
 
 const sidebarLinks = [
@@ -35,6 +39,23 @@ const Dashboard = () => {
   const { user, signOut, userRole, loading } = useAuth();
   const navigate = useNavigate();
   const { data: bookings = [], isLoading } = useMyBookings();
+
+  // Fetch user's reviews to check which bookings have been reviewed
+  const { data: userReviews = [] } = useQuery({
+    queryKey: ["user-reviews", user?.id],
+    queryFn: async () => {
+      if (!user?.id) return [];
+      const { data, error } = await supabase
+        .from("reviews")
+        .select("booking_id")
+        .eq("user_id", user.id);
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!user?.id,
+  });
+
+  const reviewedBookingIds = new Set(userReviews.map(r => r.booking_id));
 
   const handleSignOut = async () => {
     await signOut();
@@ -237,10 +258,15 @@ const Dashboard = () => {
                           <span className="text-lg font-semibold text-foreground">
                             ${Number(booking.total_amount).toFixed(0)}
                           </span>
-                          <Button variant="outline" size="sm">
-                            View Details
-                            <ChevronRight className="w-4 h-4 ml-1" />
-                          </Button>
+                          <BookingActions 
+                            booking={{
+                              id: booking.id,
+                              status: booking.status,
+                              provider_id: booking.provider_id,
+                              service_providers: booking.service_providers,
+                            }}
+                            hasReview={reviewedBookingIds.has(booking.id)}
+                          />
                         </div>
                       </div>
                     </div>
