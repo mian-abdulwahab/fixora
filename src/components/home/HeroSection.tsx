@@ -1,16 +1,39 @@
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Search, MapPin, Shield, Clock, Star } from "lucide-react";
+import { Search, MapPin, Shield, Clock, Star, Briefcase } from "lucide-react";
 import { useState } from "react";
+import { usePlatformStats } from "@/hooks/usePlatformStats";
+import CitySelect from "@/components/ui/CitySelect";
 
 const HeroSection = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [location, setLocation] = useState("");
+  const navigate = useNavigate();
+  const { data: stats, isLoading: statsLoading } = usePlatformStats();
 
-  const stats = [
-    { icon: Shield, value: "5,000+", label: "Verified Providers" },
-    { icon: Star, value: "4.9", label: "Average Rating" },
-    { icon: Clock, value: "30 min", label: "Avg Response Time" },
+  const handleSearch = () => {
+    const params = new URLSearchParams();
+    if (searchQuery) params.set("q", searchQuery);
+    if (location) params.set("location", location);
+    navigate(`/services?${params.toString()}`);
+  };
+
+  const displayStats = [
+    { 
+      icon: Shield, 
+      value: statsLoading ? "..." : (stats?.verifiedProviders || 0).toString(), 
+      label: "Verified Providers" 
+    },
+    { 
+      icon: Star, 
+      value: statsLoading ? "..." : (stats?.averageRating ? stats.averageRating.toFixed(1) : "N/A"), 
+      label: "Average Rating" 
+    },
+    { 
+      icon: Briefcase, 
+      value: statsLoading ? "..." : (stats?.totalJobsCompleted || 0).toString(), 
+      label: "Jobs Completed" 
+    },
   ];
 
   return (
@@ -26,7 +49,7 @@ const HeroSection = () => {
           {/* Badge */}
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary-foreground/10 backdrop-blur-sm border border-primary-foreground/20 text-primary-foreground text-sm mb-8 animate-fade-in-up">
             <span className="w-2 h-2 rounded-full bg-accent animate-pulse" />
-            Trusted by 50,000+ homeowners
+            Trusted by {statsLoading ? "..." : ((stats?.totalJobsCompleted || 0) > 0 ? `${stats?.totalJobsCompleted}+ customers` : "homeowners across Pakistan")}
           </div>
 
           {/* Heading */}
@@ -54,21 +77,20 @@ const HeroSection = () => {
                   placeholder="What service do you need?"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && handleSearch()}
                   className="w-full h-12 md:h-14 pl-12 pr-4 rounded-xl bg-secondary/50 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20"
                 />
               </div>
-              <div className="flex-1 relative">
-                <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-                <input
-                  type="text"
-                  placeholder="Your location"
+              <div className="flex-1">
+                <CitySelect
                   value={location}
-                  onChange={(e) => setLocation(e.target.value)}
-                  className="w-full h-12 md:h-14 pl-12 pr-4 rounded-xl bg-secondary/50 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20"
+                  onChange={setLocation}
+                  placeholder="Your city"
+                  className="h-12 md:h-14 bg-secondary/50 border-0"
                 />
               </div>
-              <Button variant="accent" size="xl" className="md:w-auto" asChild>
-                <Link to="/services">Find Services</Link>
+              <Button variant="accent" size="xl" className="md:w-auto" onClick={handleSearch}>
+                Find Services
               </Button>
             </div>
           </div>
@@ -90,7 +112,7 @@ const HeroSection = () => {
 
         {/* Stats */}
         <div className="mt-16 grid grid-cols-1 md:grid-cols-3 gap-6 max-w-3xl mx-auto">
-          {stats.map((stat, index) => (
+          {displayStats.map((stat, index) => (
             <div
               key={stat.label}
               className={`flex items-center justify-center gap-3 p-4 rounded-xl bg-primary-foreground/10 backdrop-blur-sm animate-fade-in-up`}

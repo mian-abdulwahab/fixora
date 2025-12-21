@@ -41,44 +41,59 @@ const CustomerChat = () => {
   const queryClient = useQueryClient();
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // Fetch conversations (providers the customer has booked with)
+  // Fetch conversations (all providers customer has messaged or booked with)
   const { data: conversations = [], isLoading: conversationsLoading } = useQuery({
     queryKey: ["customer-conversations", user?.id],
     queryFn: async () => {
       if (!user?.id) return [];
 
-      // Get unique providers from bookings
-      const { data: bookings, error } = await supabase
+      // Get all providers (for pre-booking messaging support)
+      // First get providers from bookings
+      const { data: bookings } = await supabase
         .from("bookings")
         .select("provider_id")
         .eq("user_id", user.id);
 
-      if (error) throw error;
+      const bookedProviderIds = new Set(bookings?.map(b => b.provider_id) || []);
 
-      const providerIds = [...new Set(bookings.map(b => b.provider_id))];
-      if (providerIds.length === 0) return [];
+      // Also get providers from existing messages
+      const { data: sentMessages } = await supabase
+        .from("messages")
+        .select("receiver_id")
+        .eq("sender_id", user.id);
 
-      // Get provider profiles
-      const { data: providers } = await supabase
+      const { data: receivedMessages } = await supabase
+        .from("messages")
+        .select("sender_id")
+        .eq("receiver_id", user.id);
+
+      const messageUserIds = new Set([
+        ...(sentMessages?.map(m => m.receiver_id) || []),
+        ...(receivedMessages?.map(m => m.sender_id) || []),
+      ]);
+
+      // Get all unique provider user_ids
+      const { data: allProviders } = await supabase
         .from("service_providers")
-        .select("id, business_name, avatar_url, user_id")
-        .in("id", providerIds);
+        .select("id, business_name, avatar_url, user_id");
+
+      const relevantProviders = (allProviders || []).filter(p => 
+        bookedProviderIds.has(p.id) || messageUserIds.has(p.user_id)
+      );
+
+      if (relevantProviders.length === 0) return [];
 
       // Get last message and unread count for each provider
       const conversationList: Conversation[] = await Promise.all(
-        (providers || []).map(async (provider) => {
+        relevantProviders.map(async (provider) => {
           const { data: messages } = await supabase
             .from("messages")
             .select("*")
-            .or(`sender_id.eq.${provider.user_id},receiver_id.eq.${provider.user_id}`)
-            .or(`sender_id.eq.${user.id},receiver_id.eq.${user.id}`)
+            .or(`and(sender_id.eq.${user.id},receiver_id.eq.${provider.user_id}),and(sender_id.eq.${provider.user_id},receiver_id.eq.${user.id})`)
             .order("created_at", { ascending: false })
             .limit(1);
 
-          const lastMsg = messages?.find(m => 
-            (m.sender_id === provider.user_id && m.receiver_id === user.id) ||
-            (m.sender_id === user.id && m.receiver_id === provider.user_id)
-          );
+          const lastMsg = messages?.[0];
 
           const { count } = await supabase
             .from("messages")

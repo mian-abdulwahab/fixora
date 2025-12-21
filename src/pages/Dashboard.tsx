@@ -22,6 +22,8 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
 import BookingActions from "@/components/booking/BookingActions";
+import MobileSidebar from "@/components/layout/MobileSidebar";
+import { useUnreadMessages } from "@/hooks/useUnreadMessages";
 
 const sidebarLinks = [
   { icon: Home, label: "Dashboard", href: "/dashboard", active: true },
@@ -38,6 +40,7 @@ const Dashboard = () => {
   const { user, signOut, userRole, loading } = useAuth();
   const navigate = useNavigate();
   const { data: bookings = [], isLoading } = useMyBookings();
+  const { unreadCount } = useUnreadMessages();
 
   // Fetch user's reviews to check which bookings have been reviewed
   const { data: userReviews = [] } = useQuery({
@@ -301,6 +304,20 @@ const Dashboard = () => {
             )}
           </div>
         </main>
+
+        {/* Mobile Sidebar */}
+        <MobileSidebar
+          links={sidebarLinks.map(link => ({
+            ...link,
+            label: link.label === "Messages" && unreadCount > 0 ? `Messages (${unreadCount})` : link.label
+          }))}
+          onSignOut={handleSignOut}
+          userInfo={{
+            name: user?.user_metadata?.name || "User",
+            subtitle: "Customer",
+            icon: User,
+          }}
+        />
       </div>
     </div>
   );
