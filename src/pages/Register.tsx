@@ -4,12 +4,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Wrench, Mail, Lock, Eye, EyeOff, User, Phone, Shield, Key, Briefcase, Clock } from "lucide-react";
+import { Wrench, Mail, Lock, Eye, EyeOff, User, Phone, Shield, Key, Briefcase, Clock, MapPin } from "lucide-react";
 import CitySelect from "@/components/ui/CitySelect";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Badge } from "@/components/ui/badge";
+import { validatePakistaniPhone, getPhoneError, formatPakistaniPhone } from "@/lib/phoneValidation";
 
 const SKILL_SUGGESTIONS = [
   "Plumbing", "Electrical", "HVAC", "Carpentry", "Painting", 
@@ -28,6 +29,7 @@ const Register = () => {
     password: "",
     confirmPassword: "",
     adminKey: "",
+    city: "",
     // Provider-specific fields
     businessName: "",
     description: "",
@@ -39,6 +41,7 @@ const Register = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [showAdminKey, setShowAdminKey] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [phoneError, setPhoneError] = useState<string | null>(null);
   const [role, setRole] = useState<"user" | "provider" | "admin">(initialRole);
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -73,7 +76,21 @@ const Register = () => {
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+    const { name, value } = e.target;
+    setFormData({ ...formData, [name]: value });
+    
+    // Validate phone on change
+    if (name === "phone") {
+      setPhoneError(getPhoneError(value));
+    }
+  };
+
+  const handlePhoneBlur = () => {
+    if (formData.phone) {
+      const formatted = formatPakistaniPhone(formData.phone);
+      setFormData({ ...formData, phone: formatted });
+      setPhoneError(getPhoneError(formatted));
+    }
   };
 
   const handleAddSkill = (skill: string) => {
@@ -115,6 +132,16 @@ const Register = () => {
       return;
     }
 
+    // Validate phone number
+    if (formData.phone && !validatePakistaniPhone(formData.phone)) {
+      toast({
+        title: "Invalid phone number",
+        description: "Please enter a valid Pakistani phone number.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     // Provider-specific validations
     if (role === "provider") {
       if (!formData.businessName.trim()) {
@@ -133,6 +160,16 @@ const Register = () => {
         });
         return;
       }
+    }
+
+    // Customer city validation
+    if (role === "user" && !formData.city) {
+      toast({
+        title: "City required",
+        description: "Please select your city to see nearby providers.",
+        variant: "destructive",
+      });
+      return;
     }
 
     setIsLoading(true);
@@ -177,7 +214,6 @@ const Register = () => {
     const { error } = await signUp(formData.email, formData.password, formData.name, role);
 
     if (error) {
-      // Handle duplicate email error specifically
       const errorMessage = error.message.toLowerCase();
       if (errorMessage.includes("already registered") || errorMessage.includes("already exists") || errorMessage.includes("duplicate")) {
         toast({
@@ -196,12 +232,28 @@ const Register = () => {
       return;
     }
 
-    // If registering as provider, wait for the user to be created then create provider profile
-    if (role === "provider") {
-      // Get the newly created user
-      const { data: { user: newUser } } = await supabase.auth.getUser();
-      
-      if (newUser) {
+    // Get the newly created user
+    const { data: { user: newUser } } = await supabase.auth.getUser();
+
+    if (newUser) {
+      // Update the profile with phone and city
+      const profileUpdate: Record<string, string | null> = {
+        phone: formData.phone || null,
+        name: formData.name,
+        email: formData.email,
+      };
+
+      if (role === "user") {
+        // For customers, store city in address field (will be used for filtering)
+        profileUpdate.address = formData.city;
+      }
+
+      await supabase
+        .from("profiles")
+        .update(profileUpdate)
+        .eq("id", newUser.id);
+
+      if (role === "provider") {
         const { error: providerError } = await supabase
           .from("service_providers")
           .insert({
@@ -231,13 +283,7 @@ const Register = () => {
             description: "Your provider application has been submitted for review. You'll be notified once approved.",
           });
         }
-      }
-    } else if (role === "admin") {
-      // For admin registration, assign admin role server-side after signup
-      const { data: { user: newUser } } = await supabase.auth.getUser();
-      
-      if (newUser) {
-        // Call edge function with userId to assign admin role server-side
+      } else if (role === "admin") {
         const { data: roleData, error: roleError } = await supabase.functions.invoke("verify-admin-key", {
           body: { adminKey: formData.adminKey, userId: newUser.id },
         });
@@ -255,21 +301,18 @@ const Register = () => {
             description: "Your admin account has been set up successfully.",
           });
         }
+      } else {
+        toast({
+          title: "Account created!",
+          description: "Please check your email to verify your account.",
+        });
       }
-    } else {
-      toast({
-        title: "Account created!",
-        description: "Please check your email to verify your account.",
-      });
     }
 
     setIsLoading(false);
-    
-    // Redirect to email verification page
     navigate("/verify-email");
   };
 
-  // Show loading while checking auth status
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -399,14 +442,36 @@ const Register = () => {
                   id="phone"
                   name="phone"
                   type="tel"
-                  placeholder="Enter your phone number"
+                  placeholder="03XX-XXXXXXX"
                   value={formData.phone}
                   onChange={handleChange}
-                  className="pl-10 h-12"
+                  onBlur={handlePhoneBlur}
+                  className={`pl-10 h-12 ${phoneError ? "border-destructive" : ""}`}
                   required={role === "provider"}
                 />
               </div>
+              {phoneError && (
+                <p className="text-xs text-destructive">{phoneError}</p>
+              )}
+              <p className="text-xs text-muted-foreground">
+                Pakistani format: 03XX-XXXXXXX or +92XXXXXXXXXX
+              </p>
             </div>
+
+            {/* Customer city field */}
+            {role === "user" && (
+              <div className="space-y-2">
+                <Label htmlFor="city">Your City *</Label>
+                <CitySelect
+                  value={formData.city}
+                  onChange={(value) => setFormData({ ...formData, city: value })}
+                  placeholder="Select your city..."
+                />
+                <p className="text-xs text-muted-foreground">
+                  We'll show you service providers in your area
+                </p>
+              </div>
+            )}
 
             {/* Provider-specific fields */}
             {role === "provider" && (
@@ -570,7 +635,7 @@ const Register = () => {
               </div>
             </div>
 
-            {/* Admin Key Field - Only shown when admin role is selected */}
+            {/* Admin Key Field */}
             {role === "admin" && (
               <div className="space-y-2">
                 <Label htmlFor="adminKey" className="flex items-center gap-2">
