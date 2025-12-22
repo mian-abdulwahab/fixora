@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 
+// Public-safe interface (excludes email, phone, application_status, rejection_reason)
 export interface ServiceProvider {
   id: string;
   user_id: string;
@@ -16,12 +17,34 @@ export interface ServiceProvider {
   verified: boolean;
   avatar_url: string | null;
   banner_image_url: string | null;
-  phone: string | null;
-  email: string | null;
   is_active: boolean;
   created_at: string;
   updated_at: string;
+  experience_years: number | null;
+  skills: string[] | null;
 }
+
+// Safe fields for public queries - excludes sensitive data like email, phone, application_status, rejection_reason
+const PUBLIC_PROVIDER_FIELDS = `
+  id,
+  user_id,
+  business_name,
+  description,
+  location,
+  latitude,
+  longitude,
+  rating,
+  total_reviews,
+  total_jobs,
+  verified,
+  avatar_url,
+  banner_image_url,
+  is_active,
+  created_at,
+  updated_at,
+  experience_years,
+  skills
+`;
 
 export const useServiceProviders = (categorySlug?: string) => {
   return useQuery({
@@ -30,13 +53,14 @@ export const useServiceProviders = (categorySlug?: string) => {
       let query = supabase
         .from("service_providers")
         .select(`
-          *,
+          ${PUBLIC_PROVIDER_FIELDS},
           provider_categories!inner(
             category_id,
             service_categories!inner(slug)
           )
         `)
         .eq("is_active", true)
+        .eq("verified", true)
         .order("rating", { ascending: false });
 
       if (categorySlug && categorySlug !== "all") {
@@ -55,9 +79,10 @@ export const useServiceProvider = (id: string) => {
   return useQuery({
     queryKey: ["service-provider", id],
     queryFn: async () => {
+      // For public view, only select safe fields
       const { data, error } = await supabase
         .from("service_providers")
-        .select("*")
+        .select(PUBLIC_PROVIDER_FIELDS)
         .eq("id", id)
         .maybeSingle();
 
@@ -76,6 +101,7 @@ export const useMyProviderProfile = () => {
     queryFn: async () => {
       if (!user) return null;
 
+      // Own profile - can access all fields via RLS
       const { data, error } = await supabase
         .from("service_providers")
         .select("*")

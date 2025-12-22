@@ -19,7 +19,7 @@ export const usePlatformStats = () => {
         .eq("verified", true)
         .eq("is_active", true);
 
-      // Get average rating and total reviews
+      // Get only safe aggregate fields - no sensitive data
       const { data: providerStats } = await supabase
         .from("service_providers")
         .select("rating, total_reviews, total_jobs")

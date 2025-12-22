@@ -43,16 +43,25 @@ const BookingActions = ({ booking, isProvider = false, hasReview = false }: Book
   const { user } = useAuth();
   const queryClient = useQueryClient();
 
-  // Helper to create notification
+  // Helper to create notification via secure edge function
   const createNotification = async (userId: string, title: string, message: string, type: string) => {
-    await supabase.from("notifications").insert({
-      user_id: userId,
-      title,
-      message,
-      type,
-      related_id: booking.id,
-      related_type: "booking",
-    });
+    try {
+      const { error } = await supabase.functions.invoke('create-notification', {
+        body: {
+          userId,
+          title,
+          message,
+          type,
+          relatedId: booking.id,
+          relatedType: "booking",
+        }
+      });
+      if (error) {
+        console.error("Failed to create notification:", error);
+      }
+    } catch (err) {
+      console.error("Notification error:", err);
+    }
   };
 
   const updateStatusMutation = useMutation({

@@ -26,8 +26,6 @@ import {
   Star, 
   MapPin, 
   CheckCircle2, 
-  Phone, 
-  Mail, 
   Clock,
   Calendar as CalendarIcon,
   MessageSquare,
@@ -60,13 +58,19 @@ const ProviderDetail = () => {
   const [notes, setNotes] = useState("");
   const [isBookingOpen, setIsBookingOpen] = useState(false);
 
-  // Fetch provider details
+  // Safe public fields for provider display (no email, phone, application_status, rejection_reason)
+  const PUBLIC_PROVIDER_FIELDS = `
+    id, user_id, business_name, description, location, rating, total_reviews, total_jobs,
+    verified, avatar_url, banner_image_url, experience_years, skills, is_active
+  `;
+
+  // Fetch provider details - only safe fields for public view
   const { data: provider, isLoading: providerLoading } = useQuery({
     queryKey: ["provider-detail", id],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("service_providers")
-        .select("*")
+        .select(PUBLIC_PROVIDER_FIELDS)
         .eq("id", id)
         .maybeSingle();
       
@@ -147,16 +151,22 @@ const ProviderDetail = () => {
 
       if (error) throw error;
 
-      // Create notification for provider
+      // Create notification for provider via secure edge function
       if (provider?.user_id) {
-        await supabase.from("notifications").insert({
-          user_id: provider.user_id,
-          title: "New Booking Request! 📅",
-          message: `You have a new booking request for "${service.title}" on ${format(selectedDate, "MMM d, yyyy")} at ${selectedTime}.`,
-          type: "booking",
-          related_id: data.id,
-          related_type: "booking",
-        });
+        try {
+          await supabase.functions.invoke('create-notification', {
+            body: {
+              userId: provider.user_id,
+              title: "New Booking Request! 📅",
+              message: `You have a new booking request for "${service.title}" on ${format(selectedDate, "MMM d, yyyy")} at ${selectedTime}.`,
+              type: "booking",
+              relatedId: data.id,
+              relatedType: "booking",
+            }
+          });
+        } catch (err) {
+          console.error("Failed to send notification:", err);
+        }
       }
 
       return data;
@@ -529,33 +539,20 @@ const ProviderDetail = () => {
 
             {/* Sidebar */}
             <div className="space-y-6">
-              {/* Contact Card */}
+              {/* Contact Card - Only show location (phone/email hidden for privacy) */}
               <div className="bg-card rounded-2xl shadow-card p-6">
-                <h3 className="font-semibold text-foreground mb-4">Contact Information</h3>
+                <h3 className="font-semibold text-foreground mb-4">Location</h3>
                 <div className="space-y-3">
-                  {provider.phone && (
-                    <a
-                      href={`tel:${provider.phone}`}
-                      className="flex items-center gap-3 p-3 rounded-xl bg-secondary/50 hover:bg-secondary transition-colors"
-                    >
-                      <Phone className="w-5 h-5 text-primary" />
-                      <span className="text-foreground">{provider.phone}</span>
-                    </a>
-                  )}
-                  {provider.email && (
-                    <a
-                      href={`mailto:${provider.email}`}
-                      className="flex items-center gap-3 p-3 rounded-xl bg-secondary/50 hover:bg-secondary transition-colors"
-                    >
-                      <Mail className="w-5 h-5 text-primary" />
-                      <span className="text-foreground text-sm">{provider.email}</span>
-                    </a>
-                  )}
                   {provider.location && (
                     <div className="flex items-center gap-3 p-3 rounded-xl bg-secondary/50">
                       <MapPin className="w-5 h-5 text-primary" />
                       <span className="text-foreground text-sm">{provider.location}</span>
                     </div>
+                  )}
+                  {user && (
+                    <p className="text-xs text-muted-foreground">
+                      Contact information is shared after booking confirmation
+                    </p>
                   )}
                 </div>
               </div>
