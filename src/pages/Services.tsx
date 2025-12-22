@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
@@ -8,6 +8,7 @@ import SearchFilters, { SearchFiltersState } from "@/components/services/SearchF
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { matchProvider, fuzzyMatch } from "@/lib/searchUtils";
+import { useCustomerCity } from "@/hooks/useCustomerCity";
 
 const categories = [
   { id: "all", name: "All Services" },
@@ -23,15 +24,23 @@ const categories = [
 
 const Services = () => {
   const [searchParams] = useSearchParams();
+  const { customerCity } = useCustomerCity();
   const [filters, setFilters] = useState<SearchFiltersState>({
     searchQuery: searchParams.get("q") || "",
     category: searchParams.get("category") || "all",
-    location: "",
+    location: searchParams.get("location") || "",
     minRating: 0,
     priceRange: [0, 500],
     sortBy: "rating",
     verifiedOnly: false,
   });
+
+  // Auto-set location from customer's city when available
+  useEffect(() => {
+    if (customerCity && !filters.location && !searchParams.get("location")) {
+      setFilters(prev => ({ ...prev, location: customerCity }));
+    }
+  }, [customerCity, searchParams]);
 
   // Fetch providers from database - only show verified/approved providers
   const { data: providers = [], isLoading } = useQuery({

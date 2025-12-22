@@ -11,6 +11,7 @@ import {
 import { useAuth } from "@/contexts/AuthContext";
 import { useIsAdmin } from "@/hooks/useAdmin";
 import { Button } from "@/components/ui/button";
+import MobileSidebar from "@/components/layout/MobileSidebar";
 
 const adminLinks = [
   { icon: LayoutDashboard, label: "Overview", href: "/admin" },
@@ -61,8 +62,8 @@ const AdminDashboard: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-secondary/30 flex">
-      {/* Sidebar */}
-      <aside className="w-64 min-h-screen bg-card border-r border-border flex flex-col">
+      {/* Sidebar - Hidden on mobile */}
+      <aside className="hidden lg:flex w-64 min-h-screen bg-card border-r border-border flex-col">
         <div className="p-6 border-b border-border">
           <Link to="/" className="flex items-center gap-2">
             <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
@@ -117,9 +118,20 @@ const AdminDashboard: React.FC = () => {
       </aside>
 
       {/* Main Content */}
-      <main className="flex-1 p-8 overflow-auto">
+      <main className="flex-1 p-4 md:p-8 overflow-auto">
         <Outlet />
       </main>
+
+      {/* Mobile Sidebar */}
+      <MobileSidebar
+        links={adminLinks}
+        onSignOut={handleSignOut}
+        userInfo={{
+          name: user?.user_metadata?.name || "Admin",
+          subtitle: "Administrator",
+          icon: Shield,
+        }}
+      />
     </div>
   );
 };

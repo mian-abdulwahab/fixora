@@ -24,6 +24,7 @@ import { format } from "date-fns";
 import BookingActions from "@/components/booking/BookingActions";
 import MobileSidebar from "@/components/layout/MobileSidebar";
 import { useUnreadMessages } from "@/hooks/useUnreadMessages";
+import { useMessageNotifications } from "@/hooks/useMessageNotifications";
 
 const sidebarLinks = [
   { icon: Home, label: "Dashboard", href: "/dashboard", active: true },
@@ -41,6 +42,7 @@ const Dashboard = () => {
   const navigate = useNavigate();
   const { data: bookings = [], isLoading } = useMyBookings();
   const { unreadCount } = useUnreadMessages();
+  useMessageNotifications();
 
   // Fetch user's reviews to check which bookings have been reviewed
   const { data: userReviews = [] } = useQuery({
