@@ -441,7 +441,8 @@ const Register = () => {
                 <Input
                   id="phone"
                   name="phone"
-                  type="tel"
+                  type="text"
+                  inputMode="tel"
                   placeholder="03XX-XXXXXXX"
                   value={formData.phone}
                   onChange={handleChange}

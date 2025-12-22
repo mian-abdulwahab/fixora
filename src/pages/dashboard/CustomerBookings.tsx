@@ -15,6 +15,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
 import BookingActions from "@/components/booking/BookingActions";
+import ProviderContactInfo from "@/components/booking/ProviderContactInfo";
 import {
   Select,
   SelectContent,
@@ -135,6 +136,15 @@ const CustomerBookings = () => {
                           {booking.address}
                         </span>
                       </div>
+                      {/* Show contact info for confirmed+ bookings */}
+                      {["confirmed", "in_progress", "completed"].includes(booking.status) && (
+                        <div className="mt-3">
+                          <ProviderContactInfo 
+                            providerId={booking.provider_id} 
+                            bookingStatus={booking.status} 
+                          />
+                        </div>
+                      )}
                     </div>
                     <div className="flex items-center gap-4">
                       <span className="text-lg font-semibold text-foreground">

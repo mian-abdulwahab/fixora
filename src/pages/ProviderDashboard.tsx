@@ -43,6 +43,9 @@ import {
 import ApplicationStatusBanner from "@/components/provider/ApplicationStatusBanner";
 import VerifiedBadge from "@/components/ui/VerifiedBadge";
 import CitySelect from "@/components/ui/CitySelect";
+import MobileSidebar from "@/components/layout/MobileSidebar";
+import { useUnreadMessages } from "@/hooks/useUnreadMessages";
+import { useMessageNotifications } from "@/hooks/useMessageNotifications";
 
 const sidebarLinks = [
   { icon: Home, label: "Dashboard", href: "/provider-dashboard", active: true },
@@ -69,6 +72,8 @@ const ProviderDashboard = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { unreadCount } = useUnreadMessages();
+  useMessageNotifications();
 
   // Redirect non-providers
   useEffect(() => {
@@ -570,6 +575,22 @@ const ProviderDashboard = () => {
             )}
           </div>
         </main>
+
+        {/* Mobile Sidebar */}
+        <MobileSidebar
+          links={sidebarLinks.map(link => ({
+            ...link,
+            label: link.label === "Messages" && unreadCount > 0 ? `Messages (${unreadCount})` : link.label
+          }))}
+          onSignOut={handleSignOut}
+          userInfo={{
+            name: provider?.business_name || user?.user_metadata?.name || "Provider",
+            subtitle: "Service Provider",
+            icon: Briefcase,
+            iconBgClass: "bg-accent/10",
+            iconClass: "text-accent",
+          }}
+        />
       </div>
     </div>
   );
