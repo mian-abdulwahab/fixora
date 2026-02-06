@@ -95,10 +95,14 @@ const CustomerHomePage = () => {
       {/* Quick Actions */}
       <section className="py-6 px-4">
         <div className="container mx-auto">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
             <Link to="/services" className="bg-card rounded-xl p-6 shadow-card hover:shadow-lg transition-shadow text-center">
               <Search className="w-8 h-8 text-primary mx-auto mb-2" />
               <span className="font-medium text-foreground">Browse Services</span>
+            </Link>
+            <Link to="/ai-analyzer" className="bg-card rounded-xl p-6 shadow-card hover:shadow-lg transition-shadow text-center">
+              <Zap className="w-8 h-8 text-purple-600 mx-auto mb-2" />
+              <span className="font-medium text-foreground">AI Analyzer</span>
             </Link>
             <Link to="/dashboard/bookings" className="bg-card rounded-xl p-6 shadow-card hover:shadow-lg transition-shadow text-center">
               <Calendar className="w-8 h-8 text-accent mx-auto mb-2" />
@@ -109,7 +113,7 @@ const CustomerHomePage = () => {
               <span className="font-medium text-foreground">My Profile</span>
             </Link>
             <Link to="/how-it-works" className="bg-card rounded-xl p-6 shadow-card hover:shadow-lg transition-shadow text-center">
-              <Zap className="w-8 h-8 text-purple-600 mx-auto mb-2" />
+              <Search className="w-8 h-8 text-accent mx-auto mb-2" />
               <span className="font-medium text-foreground">How It Works</span>
             </Link>
           </div>
