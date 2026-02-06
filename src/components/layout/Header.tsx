@@ -50,8 +50,8 @@ const Header = () => {
     return [
       { href: "/", label: "Home" },
       { href: "/services", label: "Find Services" },
+      { href: "/ai-analyzer", label: "AI Analyzer" },
       { href: "/dashboard", label: "My Bookings" },
-      { href: "/dashboard/profile", label: "My Profile" },
     ];
   };
 

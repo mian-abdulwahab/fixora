@@ -16,6 +16,7 @@ import CustomerProfile from "./pages/CustomerProfile";
 import ProviderProfile from "./pages/ProviderProfile";
 import HowItWorks from "./pages/HowItWorks";
 import NotFound from "./pages/NotFound";
+import AIAnalyzer from "./pages/AIAnalyzer";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminOverview from "./pages/admin/AdminOverview";
 import AdminUsers from "./pages/admin/AdminUsers";
@@ -68,6 +69,7 @@ const App = () => (
             <Route path="/provider-dashboard/settings" element={<ProviderSettings />} />
             <Route path="/how-it-works" element={<HowItWorks />} />
             <Route path="/become-provider" element={<Navigate to="/register?role=provider" replace />} />
+            <Route path="/ai-analyzer" element={<AIAnalyzer />} />
             
             {/* Admin Routes */}
             <Route path="/admin" element={<AdminDashboard />}>
