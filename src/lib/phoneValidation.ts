@@ -10,7 +10,7 @@ export const PAKISTANI_LANDLINE_REGEX = /^(0)?[1-9][0-9]{9,10}$/;
 
 export const formatPakistaniPhone = (phone: string): string => {
   // Remove all non-digit characters except +
-  let cleaned = phone.replace(/[^\\d+]/g, "");
+  let cleaned = phone.replace(/[^\d+]/g, "");
   
   // If starts with +92, keep it
   if (cleaned.startsWith("+92")) {
@@ -38,7 +38,7 @@ export const formatPakistaniPhone = (phone: string): string => {
 export const validatePakistaniPhone = (phone: string): boolean => {
   if (!phone || phone.trim() === "") return true; // Empty is valid (optional)
   
-  const cleaned = phone.replace(/[^\\d+]/g, "");
+  const cleaned = phone.replace(/[^\d+]/g, "");
   
   // Check for +92 format (13 characters: +92 + 10 digits)
   if (cleaned.startsWith("+92")) {
@@ -75,7 +75,7 @@ export const getPhoneError = (phone: string): string | null => {
 
 // Format for display (adds dashes for readability)
 export const formatPhoneForDisplay = (phone: string): string => {
-  const cleaned = phone.replace(/[^\\d+]/g, "");
+  const cleaned = phone.replace(/[^\d+]/g, "");
   
   if (cleaned.startsWith("+92") && cleaned.length === 13) {
     // +92 3XX XXXXXXX
