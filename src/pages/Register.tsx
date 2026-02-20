@@ -43,6 +43,7 @@ const Register = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [phoneError, setPhoneError] = useState<string | null>(null);
   const [role, setRole] = useState<"user" | "provider" | "admin">(initialRole);
+  const [justSignedUp, setJustSignedUp] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
   const { signUp, user, userRole, loading } = useAuth();
@@ -57,10 +58,10 @@ const Register = () => {
 
   // Redirect if already logged in based on role
   useEffect(() => {
-    if (!loading && user && userRole) {
+    if (!loading && user && userRole && !justSignedUp) {
       redirectBasedOnRole(userRole);
     }
-  }, [user, userRole, loading]);
+  }, [user, userRole, loading, justSignedUp]);
 
   const redirectBasedOnRole = (userRoleValue: string) => {
     switch (userRoleValue) {
@@ -211,6 +212,7 @@ const Register = () => {
       }
     }
 
+    setJustSignedUp(true);
     const { error } = await signUp(formData.email, formData.password, formData.name, role);
 
     if (error) {
