@@ -5,6 +5,8 @@ import Footer from "@/components/layout/Footer";
 import { Button } from "@/components/ui/button";
 import { Star, CheckCircle2, MapPin } from "lucide-react";
 import FavoriteButton from "@/components/ui/FavoriteButton";
+import ProviderBadge from "@/components/ui/ProviderBadge";
+import ProviderMap from "@/components/services/ProviderMap";
 import SearchFilters, { SearchFiltersState } from "@/components/services/SearchFilters";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -180,6 +182,11 @@ const Services = () => {
           </div>
         </div>
 
+        {/* Service Area Map */}
+        <div className="container mx-auto px-4 py-4">
+          <ProviderMap className="mb-6" />
+        </div>
+
         {/* Results */}
         <div className="container mx-auto px-4 py-8">
           <div className="flex items-center justify-between mb-6">
@@ -245,6 +252,8 @@ const Services = () => {
                           <CheckCircle2 className="w-5 h-5 text-primary shrink-0" />
                         )}
                       </div>
+                      
+                      <ProviderBadge totalJobs={provider.total_jobs || 0} rating={Number(provider.rating || 0)} size="sm" />
 
                       <p className="text-sm text-muted-foreground mb-3 line-clamp-2">
                         {provider.description || "Professional service provider"}

@@ -8,7 +8,8 @@ import {
   ChevronRight,
   Shield,
   Zap,
-  Heart
+  Heart,
+  Gift
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -83,7 +84,7 @@ const CustomerHomePage = () => {
       {/* Quick Actions */}
       <section className="py-6 px-4">
         <div className="container mx-auto">
-          <div className="grid grid-cols-2 md:grid-cols-6 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4">
             <Link to="/services" className="bg-card rounded-xl p-6 shadow-card hover:shadow-lg transition-shadow text-center">
               <Search className="w-8 h-8 text-primary mx-auto mb-2" />
               <span className="font-medium text-foreground">{t("customer.browseServices")}</span>
@@ -107,6 +108,10 @@ const CustomerHomePage = () => {
             <Link to="/how-it-works" className="bg-card rounded-xl p-6 shadow-card hover:shadow-lg transition-shadow text-center">
               <Star className="w-8 h-8 text-accent mx-auto mb-2" />
               <span className="font-medium text-foreground">{t("customer.howItWorks")}</span>
+            </Link>
+            <Link to="/dashboard/referrals" className="bg-card rounded-xl p-6 shadow-card hover:shadow-lg transition-shadow text-center">
+              <Gift className="w-8 h-8 text-primary mx-auto mb-2" />
+              <span className="font-medium text-foreground">Referrals</span>
             </Link>
           </div>
         </div>

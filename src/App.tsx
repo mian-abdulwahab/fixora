@@ -39,6 +39,8 @@ import CustomerPayments from "./pages/dashboard/CustomerPayments";
 import CustomerSettings from "./pages/dashboard/CustomerSettings";
 import CustomerChat from "./pages/dashboard/CustomerChat";
 import CustomerFavorites from "./pages/dashboard/CustomerFavorites";
+import ReferralProgram from "./pages/dashboard/ReferralProgram";
+import AdminDisputes from "./pages/admin/AdminDisputes";
 
 const queryClient = new QueryClient();
 
@@ -68,6 +70,7 @@ const App = () => (
                 <Route path="/dashboard/messages" element={<CustomerChat />} />
                 <Route path="/dashboard/settings" element={<CustomerSettings />} />
                 <Route path="/dashboard/favorites" element={<CustomerFavorites />} />
+                <Route path="/dashboard/referrals" element={<ReferralProgram />} />
                 <Route path="/dashboard/chat/:providerId?" element={<CustomerChat />} />
                 <Route path="/provider-dashboard" element={<ProviderDashboard />} />
                 <Route path="/provider-dashboard/profile" element={<ProviderProfile />} />
@@ -88,6 +91,7 @@ const App = () => (
                   <Route path="providers" element={<AdminProviders />} />
                   <Route path="bookings" element={<AdminBookings />} />
                   <Route path="categories" element={<AdminCategories />} />
+                  <Route path="disputes" element={<AdminDisputes />} />
                 </Route>
                 
                 {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

@@ -36,6 +36,7 @@ import {
   ArrowLeft
  } from "lucide-react";
 import FavoriteButton from "@/components/ui/FavoriteButton";
+import ProviderBadge from "@/components/ui/ProviderBadge";
 import { useToast } from "@/hooks/use-toast";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -294,6 +295,7 @@ const ProviderDetail = () => {
                         {provider.verified && (
                           <CheckCircle2 className="w-6 h-6 text-primary" />
                         )}
+                        <ProviderBadge totalJobs={provider.total_jobs || 0} rating={Number(provider.rating || 0)} />
                       </div>
                       {provider.location && (
                         <p className="text-muted-foreground mb-4">{provider.location}</p>

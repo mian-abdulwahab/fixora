@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Menu, X, Wrench, User, LogIn, LogOut, LayoutDashboard, UserCircle, Heart } from "lucide-react";
+import { Menu, X, Wrench, User, LogIn, LogOut, LayoutDashboard, UserCircle, Heart, Gift } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import ThemeToggle from "@/components/ui/ThemeToggle";
@@ -130,6 +130,14 @@ const Header = () => {
                       <Link to="/dashboard/favorites" className="flex items-center cursor-pointer">
                         <Heart className="w-4 h-4 mr-2" />
                         {t("customer.favorites")}
+                      </Link>
+                    </DropdownMenuItem>
+                  )}
+                  {userRole === "user" && (
+                    <DropdownMenuItem asChild>
+                      <Link to="/dashboard/referrals" className="flex items-center cursor-pointer">
+                        <Gift className="w-4 h-4 mr-2" />
+                        Referral Program
                       </Link>
                     </DropdownMenuItem>
                   )}

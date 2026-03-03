@@ -20,6 +20,7 @@ import BookingActions from "@/components/booking/BookingActions";
 import ProviderContactInfo from "@/components/booking/ProviderContactInfo";
 import BookingTrackingTimeline from "@/components/booking/BookingTrackingTimeline";
 import PaymentReceiptUpload from "@/components/booking/PaymentReceiptUpload";
+import DisputeDialog from "@/components/booking/DisputeDialog";
 import {
   Select,
   SelectContent,
@@ -161,10 +162,19 @@ const CustomerBookings = () => {
                               id: booking.id,
                               status: booking.status,
                               provider_id: booking.provider_id,
+                              user_id: booking.user_id,
                               service_providers: booking.service_providers,
+                              services: booking.services,
                             }}
                             hasReview={reviewedBookingIds.has(booking.id)}
                           />
+                          {["completed", "in_progress"].includes(booking.status) && (
+                            <DisputeDialog
+                              bookingId={booking.id}
+                              providerId={booking.provider_id}
+                              providerName={booking.service_providers?.business_name || "Provider"}
+                            />
+                          )}
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
