@@ -153,6 +153,69 @@ export type Database = {
           },
         ]
       }
+      disputes: {
+        Row: {
+          admin_notes: string | null
+          booking_id: string
+          created_at: string | null
+          customer_id: string
+          description: string
+          id: string
+          priority: string
+          provider_id: string
+          resolution: string | null
+          resolved_by: string | null
+          status: string
+          subject: string
+          updated_at: string | null
+        }
+        Insert: {
+          admin_notes?: string | null
+          booking_id: string
+          created_at?: string | null
+          customer_id: string
+          description: string
+          id?: string
+          priority?: string
+          provider_id: string
+          resolution?: string | null
+          resolved_by?: string | null
+          status?: string
+          subject: string
+          updated_at?: string | null
+        }
+        Update: {
+          admin_notes?: string | null
+          booking_id?: string
+          created_at?: string | null
+          customer_id?: string
+          description?: string
+          id?: string
+          priority?: string
+          provider_id?: string
+          resolution?: string | null
+          resolved_by?: string | null
+          status?: string
+          subject?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "disputes_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "disputes_provider_id_fkey"
+            columns: ["provider_id"]
+            isOneToOne: false
+            referencedRelation: "service_providers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       email_otps: {
         Row: {
           created_at: string | null
@@ -430,6 +493,95 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      referral_codes: {
+        Row: {
+          code: string
+          created_at: string | null
+          id: string
+          user_id: string
+        }
+        Insert: {
+          code: string
+          created_at?: string | null
+          id?: string
+          user_id: string
+        }
+        Update: {
+          code?: string
+          created_at?: string | null
+          id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      referral_credits: {
+        Row: {
+          amount: number
+          created_at: string | null
+          description: string | null
+          id: string
+          referral_id: string | null
+          type: string
+          user_id: string
+        }
+        Insert: {
+          amount?: number
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          referral_id?: string | null
+          type: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          referral_id?: string | null
+          type?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "referral_credits_referral_id_fkey"
+            columns: ["referral_id"]
+            isOneToOne: false
+            referencedRelation: "referrals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      referrals: {
+        Row: {
+          created_at: string | null
+          credits_earned: number | null
+          id: string
+          referral_code: string
+          referred_id: string
+          referrer_id: string
+          status: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          credits_earned?: number | null
+          id?: string
+          referral_code: string
+          referred_id: string
+          referrer_id: string
+          status?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          credits_earned?: number | null
+          id?: string
+          referral_code?: string
+          referred_id?: string
+          referrer_id?: string
+          status?: string | null
+        }
+        Relationships: []
       }
       reviews: {
         Row: {
