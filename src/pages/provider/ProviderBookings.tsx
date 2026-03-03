@@ -16,6 +16,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
 import BookingActions from "@/components/booking/BookingActions";
+import DisputeDialog from "@/components/booking/DisputeDialog";
 import {
   Dialog,
   DialogContent,
@@ -221,6 +222,16 @@ const ProviderBookings = () => {
                           }} 
                           isProvider={true}
                         />
+                        {["completed", "in_progress", "confirmed"].includes(booking.status || "") && (
+                          <DisputeDialog
+                            bookingId={booking.id}
+                            providerId={booking.provider_id}
+                            providerName={provider?.business_name || "Provider"}
+                            customerId={booking.user_id}
+                            customerName={booking.customer?.name || "Customer"}
+                            isProvider={true}
+                          />
+                        )}
                       </div>
                     </div>
                   </div>

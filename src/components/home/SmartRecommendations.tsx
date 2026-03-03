@@ -4,13 +4,15 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useCustomerCity } from "@/hooks/useCustomerCity";
 
 const SmartRecommendations = () => {
   const { user } = useAuth();
+  const { customerCity } = useCustomerCity();
 
   // Get user's past booking categories
   const { data: recommendations = [], isLoading } = useQuery({
-    queryKey: ["smart-recommendations", user?.id],
+    queryKey: ["smart-recommendations", user?.id, customerCity],
     queryFn: async () => {
       if (!user?.id) return [];
 
@@ -58,7 +60,7 @@ const SmartRecommendations = () => {
         ].slice(0, 10);
 
         if (similarProviderIds.length > 0) {
-          const { data: providers } = await supabase
+          let provQuery = supabase
             .from("service_providers")
             .select("id, business_name, rating, total_reviews, total_jobs, location, avatar_url, verified")
             .in("id", similarProviderIds)
@@ -66,6 +68,11 @@ const SmartRecommendations = () => {
             .order("rating", { ascending: false })
             .limit(4);
 
+          if (customerCity) {
+            provQuery = provQuery.eq("location", customerCity);
+          }
+
+          const { data: providers } = await provQuery;
           recommendedProviders = providers || [];
         }
       }
@@ -76,7 +83,7 @@ const SmartRecommendations = () => {
           ...bookedProviderIds,
           ...recommendedProviders.map((p) => p.id),
         ];
-        const { data: topProviders } = await supabase
+        let topQuery = supabase
           .from("service_providers")
           .select("id, business_name, rating, total_reviews, total_jobs, location, avatar_url, verified")
           .eq("is_active", true)
@@ -84,6 +91,11 @@ const SmartRecommendations = () => {
           .order("rating", { ascending: false })
           .limit(4 - recommendedProviders.length);
 
+        if (customerCity) {
+          topQuery = topQuery.eq("location", customerCity);
+        }
+
+        const { data: topProviders } = await topQuery;
         recommendedProviders = [...recommendedProviders, ...(topProviders || [])];
       }
 

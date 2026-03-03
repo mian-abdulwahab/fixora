@@ -396,179 +396,194 @@ const ProviderDashboard = () => {
                   </p>
                 </div>
 
-                {/* Stats */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
-                  <div className="bg-card rounded-xl shadow-card p-5">
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-muted-foreground text-sm">Pending</span>
-                      <Clock className="w-5 h-5 text-accent" />
-                    </div>
-                    <p className="text-2xl font-bold text-foreground">{pendingBookings.length}</p>
-                  </div>
-                  <div className="bg-card rounded-xl shadow-card p-5">
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-muted-foreground text-sm">Upcoming</span>
-                      <Calendar className="w-5 h-5 text-primary" />
-                    </div>
-                    <p className="text-2xl font-bold text-foreground">{upcomingBookings.length}</p>
-                  </div>
-                  <div className="bg-card rounded-xl shadow-card p-5">
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-muted-foreground text-sm">Jobs Completed</span>
-                      <CheckCircle className="w-5 h-5 text-emerald-600" />
-                    </div>
-                    <p className="text-2xl font-bold text-foreground">{provider.total_jobs || 0}</p>
-                  </div>
-                  <div className="bg-card rounded-xl shadow-card p-5">
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-muted-foreground text-sm">Total Earnings</span>
-                      <DollarSign className="w-5 h-5 text-emerald-600" />
-                    </div>
-                    <p className="text-2xl font-bold text-foreground">${totalEarnings.toFixed(0)}</p>
-                  </div>
-                  <div className="bg-card rounded-xl shadow-card p-5">
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-muted-foreground text-sm">Rating</span>
-                      <Star className="w-5 h-5 text-accent fill-accent" />
-                    </div>
-                    <p className="text-2xl font-bold text-foreground">
-                      {provider.rating ? Number(provider.rating).toFixed(1) : "N/A"}
-                    </p>
-                  </div>
-                </div>
-
-                {/* Services Quick View */}
-                <div className="bg-card rounded-2xl shadow-card p-6 mb-8">
-                  <div className="flex items-center justify-between mb-4">
-                    <h2 className="text-xl font-semibold text-foreground">Your Services</h2>
-                    <Button variant="outline" size="sm" asChild>
-                      <Link to="/provider-dashboard/services">
-                        <Plus className="w-4 h-4 mr-1" />
-                        Add Service
-                      </Link>
-                    </Button>
-                  </div>
-                  {services.length === 0 ? (
-                    <p className="text-muted-foreground text-center py-8">
-                      No services yet. Add your first service to start receiving bookings.
-                    </p>
-                  ) : (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                      {services.slice(0, 3).map((service) => (
-                        <div key={service.id} className="border border-border rounded-lg p-4">
-                          <h3 className="font-medium text-foreground">{service.title}</h3>
-                          <p className="text-sm text-muted-foreground mt-1">
-                            ${Number(service.price).toFixed(0)} / {service.price_type}
-                          </p>
-                        </div>
-                      ))}
+                {/* Dashboard content wrapper - locked for unapproved providers */}
+                <div className="relative">
+                  {(provider as any).application_status !== "approved" && (
+                    <div className="absolute inset-0 bg-background/60 backdrop-blur-[2px] z-10 rounded-2xl flex items-center justify-center pointer-events-auto">
+                      <div className="text-center p-8">
+                        <Clock className="w-12 h-12 text-accent mx-auto mb-3" />
+                        <h3 className="text-lg font-semibold text-foreground mb-2">Dashboard Locked</h3>
+                        <p className="text-muted-foreground max-w-sm">
+                          Your dashboard features will be unlocked once the admin approves your application. You'll be notified when this happens.
+                        </p>
+                      </div>
                     </div>
                   )}
-                </div>
 
-                {/* Bookings */}
-                <div className="bg-card rounded-2xl shadow-card">
-                  <div className="p-6 border-b border-border">
-                    <div className="flex items-center justify-between">
-                      <h2 className="text-xl font-semibold text-foreground">Bookings</h2>
-                      <div className="flex gap-2">
-                        {["pending", "upcoming", "completed"].map((tab) => (
-                          <button
-                            key={tab}
-                            onClick={() => setActiveTab(tab as typeof activeTab)}
-                            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors capitalize ${
-                              activeTab === tab
-                                ? "bg-primary text-primary-foreground"
-                                : "text-muted-foreground hover:bg-secondary"
-                            }`}
-                          >
-                            {tab} {tab === "pending" && pendingBookings.length > 0 && `(${pendingBookings.length})`}
-                          </button>
-                        ))}
+                  {/* Stats */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
+                    <div className="bg-card rounded-xl shadow-card p-5">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-muted-foreground text-sm">Pending</span>
+                        <Clock className="w-5 h-5 text-accent" />
                       </div>
+                      <p className="text-2xl font-bold text-foreground">{pendingBookings.length}</p>
+                    </div>
+                    <div className="bg-card rounded-xl shadow-card p-5">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-muted-foreground text-sm">Upcoming</span>
+                        <Calendar className="w-5 h-5 text-primary" />
+                      </div>
+                      <p className="text-2xl font-bold text-foreground">{upcomingBookings.length}</p>
+                    </div>
+                    <div className="bg-card rounded-xl shadow-card p-5">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-muted-foreground text-sm">Jobs Completed</span>
+                        <CheckCircle className="w-5 h-5 text-emerald-600" />
+                      </div>
+                      <p className="text-2xl font-bold text-foreground">{provider.total_jobs || 0}</p>
+                    </div>
+                    <div className="bg-card rounded-xl shadow-card p-5">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-muted-foreground text-sm">Total Earnings</span>
+                        <DollarSign className="w-5 h-5 text-emerald-600" />
+                      </div>
+                      <p className="text-2xl font-bold text-foreground">${totalEarnings.toFixed(0)}</p>
+                    </div>
+                    <div className="bg-card rounded-xl shadow-card p-5">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-muted-foreground text-sm">Rating</span>
+                        <Star className="w-5 h-5 text-accent fill-accent" />
+                      </div>
+                      <p className="text-2xl font-bold text-foreground">
+                        {provider.rating ? Number(provider.rating).toFixed(1) : "N/A"}
+                      </p>
                     </div>
                   </div>
 
-                  <div className="divide-y divide-border">
-                    {currentBookings.length > 0 ? (
-                      currentBookings.map((booking) => (
-                        <div key={booking.id} className="p-6 hover:bg-secondary/50 transition-colors">
-                          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                            <div className="flex-1">
-                              <div className="flex items-center gap-3 mb-2">
-                                <h3 className="font-semibold text-foreground">
-                                  {booking.services?.title || "Service"}
-                                </h3>
-                                <span className={`px-2 py-1 rounded-full text-xs font-medium capitalize ${getStatusColor(booking.status || "pending")}`}>
-                                  {(booking.status || "pending").replace("_", " ")}
-                                </span>
-                              </div>
-                              <p className="text-muted-foreground text-sm mb-2">
-                                Customer: {booking.customer?.name || "Unknown"}
-                              </p>
-                              <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
-                                <span className="flex items-center gap-1">
-                                  <Calendar className="w-4 h-4" />
-                                  {format(new Date(booking.scheduled_date), "MMM d, yyyy")}
-                                </span>
-                                <span className="flex items-center gap-1">
-                                  <Clock className="w-4 h-4" />
-                                  {booking.scheduled_time}
-                                </span>
-                                <span className="flex items-center gap-1">
-                                  <MapPin className="w-4 h-4" />
-                                  {booking.address}
-                                </span>
-                              </div>
-                            </div>
-                            <div className="flex items-center gap-3">
-                              <span className="text-lg font-semibold text-foreground">
-                                ${Number(booking.total_amount).toFixed(0)}
-                              </span>
-                              {booking.status === "pending" && (
-                                <>
-                                  <Button
-                                    size="sm"
-                                    onClick={() => updateBookingMutation.mutate({ id: booking.id, status: "confirmed" })}
-                                  >
-                                    <CheckCircle className="w-4 h-4 mr-1" />
-                                    Accept
-                                  </Button>
-                                  <Button
-                                    size="sm"
-                                    variant="outline"
-                                    onClick={() => updateBookingMutation.mutate({ id: booking.id, status: "cancelled" })}
-                                  >
-                                    <XCircle className="w-4 h-4 mr-1" />
-                                    Decline
-                                  </Button>
-                                </>
-                              )}
-                              {booking.status === "confirmed" && (
-                                <Button
-                                  size="sm"
-                                  onClick={() => updateBookingMutation.mutate({ id: booking.id, status: "in_progress" })}
-                                >
-                                  Start Job
-                                </Button>
-                              )}
-                              {booking.status === "in_progress" && (
-                                <Button
-                                  size="sm"
-                                  onClick={() => updateBookingMutation.mutate({ id: booking.id, status: "completed" })}
-                                >
-                                  Complete
-                                </Button>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                      ))
+                  {/* Services Quick View */}
+                  <div className="bg-card rounded-2xl shadow-card p-6 mb-8">
+                    <div className="flex items-center justify-between mb-4">
+                      <h2 className="text-xl font-semibold text-foreground">Your Services</h2>
+                      <Button variant="outline" size="sm" asChild>
+                        <Link to="/provider-dashboard/services">
+                          <Plus className="w-4 h-4 mr-1" />
+                          Add Service
+                        </Link>
+                      </Button>
+                    </div>
+                    {services.length === 0 ? (
+                      <p className="text-muted-foreground text-center py-8">
+                        No services yet. Add your first service to start receiving bookings.
+                      </p>
                     ) : (
-                      <div className="p-12 text-center">
-                        <p className="text-muted-foreground">No {activeTab} bookings found.</p>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {services.slice(0, 3).map((service) => (
+                          <div key={service.id} className="border border-border rounded-lg p-4">
+                            <h3 className="font-medium text-foreground">{service.title}</h3>
+                            <p className="text-sm text-muted-foreground mt-1">
+                              ${Number(service.price).toFixed(0)} / {service.price_type}
+                            </p>
+                          </div>
+                        ))}
                       </div>
                     )}
+                  </div>
+
+                  {/* Bookings */}
+                  <div className="bg-card rounded-2xl shadow-card">
+                    <div className="p-6 border-b border-border">
+                      <div className="flex items-center justify-between">
+                        <h2 className="text-xl font-semibold text-foreground">Bookings</h2>
+                        <div className="flex gap-2">
+                          {["pending", "upcoming", "completed"].map((tab) => (
+                            <button
+                              key={tab}
+                              onClick={() => setActiveTab(tab as typeof activeTab)}
+                              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors capitalize ${
+                                activeTab === tab
+                                  ? "bg-primary text-primary-foreground"
+                                  : "text-muted-foreground hover:bg-secondary"
+                              }`}
+                            >
+                              {tab} {tab === "pending" && pendingBookings.length > 0 && `(${pendingBookings.length})`}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="divide-y divide-border">
+                      {currentBookings.length > 0 ? (
+                        currentBookings.map((booking) => (
+                          <div key={booking.id} className="p-6 hover:bg-secondary/50 transition-colors">
+                            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                              <div className="flex-1">
+                                <div className="flex items-center gap-3 mb-2">
+                                  <h3 className="font-semibold text-foreground">
+                                    {booking.services?.title || "Service"}
+                                  </h3>
+                                  <span className={`px-2 py-1 rounded-full text-xs font-medium capitalize ${getStatusColor(booking.status || "pending")}`}>
+                                    {(booking.status || "pending").replace("_", " ")}
+                                  </span>
+                                </div>
+                                <p className="text-muted-foreground text-sm mb-2">
+                                  Customer: {booking.customer?.name || "Unknown"}
+                                </p>
+                                <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
+                                  <span className="flex items-center gap-1">
+                                    <Calendar className="w-4 h-4" />
+                                    {format(new Date(booking.scheduled_date), "MMM d, yyyy")}
+                                  </span>
+                                  <span className="flex items-center gap-1">
+                                    <Clock className="w-4 h-4" />
+                                    {booking.scheduled_time}
+                                  </span>
+                                  <span className="flex items-center gap-1">
+                                    <MapPin className="w-4 h-4" />
+                                    {booking.address}
+                                  </span>
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-3">
+                                <span className="text-lg font-semibold text-foreground">
+                                  ${Number(booking.total_amount).toFixed(0)}
+                                </span>
+                                {booking.status === "pending" && (
+                                  <>
+                                    <Button
+                                      size="sm"
+                                      onClick={() => updateBookingMutation.mutate({ id: booking.id, status: "confirmed" })}
+                                    >
+                                      <CheckCircle className="w-4 h-4 mr-1" />
+                                      Accept
+                                    </Button>
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      onClick={() => updateBookingMutation.mutate({ id: booking.id, status: "cancelled" })}
+                                    >
+                                      <XCircle className="w-4 h-4 mr-1" />
+                                      Decline
+                                    </Button>
+                                  </>
+                                )}
+                                {booking.status === "confirmed" && (
+                                  <Button
+                                    size="sm"
+                                    onClick={() => updateBookingMutation.mutate({ id: booking.id, status: "in_progress" })}
+                                  >
+                                    Start Job
+                                  </Button>
+                                )}
+                                {booking.status === "in_progress" && (
+                                  <Button
+                                    size="sm"
+                                    onClick={() => updateBookingMutation.mutate({ id: booking.id, status: "completed" })}
+                                  >
+                                    Complete
+                                  </Button>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        ))
+                      ) : (
+                        <div className="p-12 text-center">
+                          <p className="text-muted-foreground">No {activeTab} bookings found.</p>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
               </>

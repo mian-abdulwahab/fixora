@@ -51,6 +51,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       return "provider" as UserRole;
     }
 
+    // Fallback: check user_metadata.role (set during signup)
+    // This handles cases where RLS might block the service_providers query
+    const { data: { user: currentUser } } = await supabase.auth.getUser();
+    if (currentUser?.user_metadata?.role === "provider") {
+      setUserRole("provider");
+      setIsAdmin(false);
+      return "provider" as UserRole;
+    }
+
     // Default to user role
     setUserRole("user");
     setIsAdmin(false);
