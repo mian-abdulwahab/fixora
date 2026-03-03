@@ -46,7 +46,7 @@ const Register = () => {
   const [justSignedUp, setJustSignedUp] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { signUp, user, userRole, loading } = useAuth();
+  const { signUp, user, userRole, loading, refreshRole } = useAuth();
 
   // Update role when URL param changes
   useEffect(() => {
@@ -280,6 +280,8 @@ const Register = () => {
             variant: "destructive",
           });
         } else {
+          // Refresh the cached role so AuthContext knows this is a provider
+          await refreshRole();
           toast({
             title: "Application submitted!",
             description: "Your provider application has been submitted for review. You'll be notified once approved.",
@@ -298,6 +300,7 @@ const Register = () => {
             variant: "destructive",
           });
         } else {
+          await refreshRole();
           toast({
             title: "Admin account created!",
             description: "Your admin account has been set up successfully.",
