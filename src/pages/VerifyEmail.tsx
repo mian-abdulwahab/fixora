@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Wrench, Mail, CheckCircle2, RefreshCw } from "lucide-react";
+import { Wrench, Mail, CheckCircle2, RefreshCw, ShieldCheck } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/input-otp";
 
 const VerifyEmail = () => {
-  const { user, userRole, loading } = useAuth();
+  const { user, loading } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
   const [isResending, setIsResending] = useState(false);
@@ -28,7 +28,6 @@ const VerifyEmail = () => {
       return;
     }
 
-    // Check if email is already verified in profiles table
     const checkVerification = async () => {
       if (user?.id) {
         const { data: profile } = await supabase
@@ -43,16 +42,21 @@ const VerifyEmail = () => {
         }
       }
       
-      // Send OTP on mount if not already sent and not verified
+      // NOTE: Real OTP sending is commented out for testing.
+      // Uncomment the line below and comment out the dummy logic to enable real OTP flow.
+      // if (user && !otpSent) {
+      //   sendOtp();
+      // }
+      
+      // Dummy: mark OTP as "sent" without actually sending
       if (user && !otpSent) {
-        sendOtp();
+        setOtpSent(true);
       }
     };
     
     checkVerification();
   }, [user, loading, navigate, otpSent]);
 
-  // Cooldown timer effect
   useEffect(() => {
     if (cooldownSeconds > 0) {
       const timer = setTimeout(() => setCooldownSeconds(cooldownSeconds - 1), 1000);
@@ -69,6 +73,7 @@ const VerifyEmail = () => {
       .eq("id", user.id);
   };
 
+  // Real OTP sending logic - kept for future use
   const sendOtp = async () => {
     setIsResending(true);
     try {
@@ -115,6 +120,7 @@ const VerifyEmail = () => {
     setIsResending(false);
   };
 
+  // Real OTP verification logic - kept for future use
   const handleVerifyOtp = async () => {
     if (otpValue.length !== 6) {
       toast({
@@ -176,17 +182,50 @@ const VerifyEmail = () => {
     setIsVerifying(false);
   };
 
-  const handleContinue = () => {
-    switch (userRole) {
-      case "admin":
-        navigate("/admin");
-        break;
-      case "provider":
-        navigate("/provider-dashboard");
-        break;
-      default:
-        navigate("/dashboard");
+  // Dummy verification for testing - marks email as verified without OTP
+  const handleDummyVerify = async () => {
+    setIsVerifying(true);
+    await updateProfileVerification();
+    setEmailVerified(true);
+    toast({
+      title: "Email Verified! (Test Mode)",
+      description: "Your email has been marked as verified for testing.",
+    });
+    setIsVerifying(false);
+  };
+
+  // Fetch actual role from DB before redirecting to avoid stale cached role
+  const handleContinue = async () => {
+    if (!user?.id) {
+      navigate("/dashboard");
+      return;
     }
+
+    // Check admin role
+    const { data: isAdmin } = await supabase.rpc("has_role", {
+      _user_id: user.id,
+      _role: "admin" as const,
+    });
+
+    if (isAdmin) {
+      navigate("/admin");
+      return;
+    }
+
+    // Check provider role
+    const { data: providerProfile } = await supabase
+      .from("service_providers")
+      .select("id")
+      .eq("user_id", user.id)
+      .maybeSingle();
+
+    if (providerProfile) {
+      navigate("/provider-dashboard");
+      return;
+    }
+
+    // Default: customer
+    navigate("/dashboard");
   };
 
   if (loading) {
@@ -250,6 +289,7 @@ const VerifyEmail = () => {
                 </InputOTP>
               </div>
 
+              {/* Real verify button - uses OTP validation */}
               <Button
                 onClick={handleVerifyOtp}
                 className="w-full mb-3"
@@ -263,6 +303,17 @@ const VerifyEmail = () => {
                 ) : (
                   "Verify Email"
                 )}
+              </Button>
+
+              {/* Dummy verify button for testing - bypasses OTP */}
+              <Button
+                onClick={handleDummyVerify}
+                variant="secondary"
+                className="w-full mb-3"
+                disabled={isVerifying}
+              >
+                <ShieldCheck className="w-4 h-4 mr-2" />
+                Verify Without OTP (Testing)
               </Button>
 
               <p className="text-sm text-muted-foreground mb-4">
