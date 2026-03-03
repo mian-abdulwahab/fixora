@@ -34,7 +34,37 @@ const cityCoordinates: Record<string, [number, number]> = {
   "Dera Ghazi Khan": [30.0489, 70.6455],
   "Chiniot": [31.7167, 72.9781],
   "Mianwali": [32.5853, 71.5436],
+  "Muzaffarabad": [34.3700, 73.4711],
+  "Mirpur": [33.1476, 73.7519],
+  "Gilgit": [35.9208, 74.3144],
+  "Skardu": [35.2971, 75.6333],
+  "Gwadar": [25.1264, 62.3225],
+  "Turbat": [26.0031, 63.0544],
+  "Nawabshah": [26.2483, 68.4100],
+  "Khairpur": [27.5295, 68.7592],
+  "Kohat": [33.5869, 71.4414],
+  "Bannu": [32.9888, 70.6046],
+  "Swat": [35.2227, 72.3526],
+  "Chitral": [35.8518, 71.7864],
+  "Hunza": [36.3167, 74.6500],
+  "Hub": [25.0500, 66.8833],
+  "Khuzdar": [27.8000, 66.6167],
+  "Jhelum": [32.9425, 73.7257],
+  "Attock": [33.7667, 72.3597],
+  "Chakwal": [32.9328, 72.8558],
+  "Vehari": [30.0452, 72.3489],
+  "Khanewal": [30.3020, 71.9321],
+  "Burewala": [30.1667, 72.1500],
+  "Lodhran": [29.5333, 71.6333],
+  "Toba Tek Singh": [30.9667, 72.4833],
+  "Pakpattan": [30.3500, 73.3833],
 };
+
+// Pakistan bounding box
+const PAKISTAN_BOUNDS: [[number, number], [number, number]] = [
+  [23.5, 60.5], // SW corner
+  [37.5, 77.5], // NE corner
+];
 
 interface ProviderMapProps {
   className?: string;
@@ -72,7 +102,7 @@ const ProviderMap = ({ className = "" }: ProviderMapProps) => {
     const initMap = async () => {
       const L = await import("leaflet");
 
-      // Fix default marker icon issue with webpack/vite
+      // Fix default marker icon issue
       delete (L.Icon.Default.prototype as any)._getIconUrl;
       L.Icon.Default.mergeOptions({
         iconRetinaUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon-2x.png",
@@ -80,24 +110,32 @@ const ProviderMap = ({ className = "" }: ProviderMapProps) => {
         shadowUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png",
       });
 
+      const bounds = L.latLngBounds(PAKISTAN_BOUNDS);
+
       const map = L.map(mapRef.current!, {
         scrollWheelZoom: false,
-      }).setView([30.3753, 69.3451], 5); // Center of Pakistan
+        maxBounds: bounds,
+        maxBoundsViscosity: 1.0,
+        minZoom: 5,
+        maxZoom: 17,
+      }).setView([30.3753, 69.3451], 5);
 
-      // Satellite view using Esri World Imagery
+      // Satellite view
       L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}", {
         attribution: '&copy; Esri, Maxar, Earthstar Geographics',
         maxZoom: 19,
+        bounds: bounds,
       }).addTo(map);
 
-      // Add labels overlay on satellite
+      // Labels overlay
       L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}", {
         maxZoom: 19,
+        bounds: bounds,
       }).addTo(map);
 
       mapInstanceRef.current = map;
 
-      // Add provider markers
+      // Provider marker icon
       const greenIcon = L.divIcon({
         className: "custom-marker",
         html: `<div style="background: hsl(168, 80%, 35%); width: 28px; height: 28px; border-radius: 50%; border: 3px solid white; box-shadow: 0 2px 8px rgba(0,0,0,0.3); display: flex; align-items: center; justify-content: center;">
@@ -113,17 +151,13 @@ const ProviderMap = ({ className = "" }: ProviderMapProps) => {
         let lat: number | null = null;
         let lng: number | null = null;
 
-        // Try stored coordinates first
         if (provider.latitude && provider.longitude) {
           lat = Number(provider.latitude);
           lng = Number(provider.longitude);
-        }
-        // Fall back to city name matching
-        else if (provider.location) {
+        } else if (provider.location) {
           const locationLower = provider.location.toLowerCase();
           for (const [city, coords] of Object.entries(cityCoordinates)) {
             if (locationLower.includes(city.toLowerCase())) {
-              // Add small random offset so markers don't overlap
               lat = coords[0] + (Math.random() - 0.5) * 0.02;
               lng = coords[1] + (Math.random() - 0.5) * 0.02;
               break;
@@ -148,11 +182,11 @@ const ProviderMap = ({ className = "" }: ProviderMapProps) => {
         }
       });
 
-      // Fit bounds if we have markers
+      // Fit bounds to providers or default to Pakistan
       const validProviders = providers.filter((p: any) => {
         if (p.latitude && p.longitude) return true;
         if (p.location) {
-          return Object.keys(cityCoordinates).some(city => 
+          return Object.keys(cityCoordinates).some(city =>
             p.location.toLowerCase().includes(city.toLowerCase())
           );
         }
@@ -160,7 +194,7 @@ const ProviderMap = ({ className = "" }: ProviderMapProps) => {
       });
 
       if (validProviders.length > 0) {
-        const bounds = L.latLngBounds(
+        const providerBounds = L.latLngBounds(
           validProviders.map((p: any) => {
             if (p.latitude && p.longitude) return [Number(p.latitude), Number(p.longitude)];
             const loc = p.location.toLowerCase();
@@ -170,7 +204,9 @@ const ProviderMap = ({ className = "" }: ProviderMapProps) => {
             return [30.3753, 69.3451];
           })
         );
-        map.fitBounds(bounds, { padding: [50, 50], maxZoom: 8 });
+        map.fitBounds(providerBounds, { padding: [50, 50], maxZoom: 12 });
+      } else {
+        map.fitBounds(bounds, { padding: [20, 20] });
       }
     };
 
@@ -186,7 +222,7 @@ const ProviderMap = ({ className = "" }: ProviderMapProps) => {
 
   return (
     <div className={`rounded-2xl overflow-hidden border border-border shadow-card ${className}`}>
-      <div ref={mapRef} className="h-[400px] w-full" />
+      <div ref={mapRef} className="h-[300px] sm:h-[400px] w-full" />
     </div>
   );
 };

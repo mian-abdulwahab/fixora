@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import { LanguageProvider } from "@/contexts/LanguageContext";
+import SupportChatButton from "@/components/layout/SupportChatButton";
 import Index from "./pages/Index";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
@@ -94,9 +95,9 @@ const App = () => (
                   <Route path="disputes" element={<AdminDisputes />} />
                 </Route>
                 
-                {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                 <Route path="*" element={<NotFound />} />
               </Routes>
+              <SupportChatButton />
             </BrowserRouter>
           </TooltipProvider>
         </AuthProvider>
