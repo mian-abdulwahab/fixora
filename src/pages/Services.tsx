@@ -4,6 +4,7 @@ import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
 import { Button } from "@/components/ui/button";
 import { Star, CheckCircle2, MapPin } from "lucide-react";
+import FavoriteButton from "@/components/ui/FavoriteButton";
 import SearchFilters, { SearchFiltersState } from "@/components/services/SearchFilters";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -293,7 +294,10 @@ const Services = () => {
                           </span>{" "}
                           jobs
                         </span>
-                        <Button size="sm">Book Now</Button>
+                        <div className="flex items-center gap-1">
+                          <FavoriteButton providerId={provider.id} />
+                          <Button size="sm">Book Now</Button>
+                        </div>
                       </div>
                     </div>
                   </Link>

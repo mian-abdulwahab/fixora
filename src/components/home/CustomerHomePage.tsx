@@ -3,23 +3,25 @@ import { Button } from "@/components/ui/button";
 import { 
   Calendar, 
   Clock, 
-  MapPin, 
   Star,
   Search,
   ChevronRight,
   Shield,
-  Zap
+  Zap,
+  Heart
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { useMyBookings } from "@/hooks/useBookings";
-import { useServiceProviders } from "@/hooks/useServiceProviders";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { format } from "date-fns";
 import SmartRecommendations from "./SmartRecommendations";
+import FavoriteProviders from "./FavoriteProviders";
 
 const CustomerHomePage = () => {
   const { user } = useAuth();
+  const { t } = useLanguage();
   const { data: bookings = [] } = useMyBookings();
   
   const { data: profile } = useQuery({
@@ -45,9 +47,9 @@ const CustomerHomePage = () => {
     switch (status) {
       case "confirmed": return "bg-primary/10 text-primary";
       case "pending": return "bg-accent/10 text-accent";
-      case "completed": return "bg-emerald-100 text-emerald-700";
+      case "completed": return "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400";
       case "cancelled": return "bg-destructive/10 text-destructive";
-      case "in_progress": return "bg-blue-100 text-blue-700";
+      case "in_progress": return "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400";
       default: return "bg-muted text-muted-foreground";
     }
   };
@@ -59,16 +61,16 @@ const CustomerHomePage = () => {
         <div className="container mx-auto">
           <div className="bg-gradient-to-r from-primary/10 to-accent/10 rounded-2xl p-8">
             <h1 className="text-3xl md:text-4xl font-bold text-foreground mb-2">
-              Welcome back, {user?.user_metadata?.name?.split(" ")[0] || "there"}! 👋
+              {t("customer.welcome")}, {user?.user_metadata?.name?.split(" ")[0] || "there"}! 👋
             </h1>
             <p className="text-muted-foreground text-lg mb-6">
-              What service do you need today?
+              {t("customer.whatService")}
             </p>
             <div className="relative max-w-xl">
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
               <input
                 type="text"
-                placeholder="Search for services (e.g., plumbing, cleaning...)"
+                placeholder={t("customer.searchPlaceholder")}
                 className="w-full pl-12 pr-4 py-4 rounded-xl border border-border bg-background focus:outline-none focus:ring-2 focus:ring-primary"
                 onClick={() => window.location.href = "/services"}
                 readOnly
@@ -81,39 +83,46 @@ const CustomerHomePage = () => {
       {/* Quick Actions */}
       <section className="py-6 px-4">
         <div className="container mx-auto">
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-6 gap-4">
             <Link to="/services" className="bg-card rounded-xl p-6 shadow-card hover:shadow-lg transition-shadow text-center">
               <Search className="w-8 h-8 text-primary mx-auto mb-2" />
-              <span className="font-medium text-foreground">Browse Services</span>
+              <span className="font-medium text-foreground">{t("customer.browseServices")}</span>
             </Link>
             <Link to="/ai-analyzer" className="bg-card rounded-xl p-6 shadow-card hover:shadow-lg transition-shadow text-center">
               <Zap className="w-8 h-8 text-purple-600 mx-auto mb-2" />
-              <span className="font-medium text-foreground">AI Analyzer</span>
+              <span className="font-medium text-foreground">{t("nav.aiAnalyzer")}</span>
             </Link>
             <Link to="/dashboard/bookings" className="bg-card rounded-xl p-6 shadow-card hover:shadow-lg transition-shadow text-center">
               <Calendar className="w-8 h-8 text-accent mx-auto mb-2" />
-              <span className="font-medium text-foreground">My Bookings</span>
+              <span className="font-medium text-foreground">{t("customer.myBookings")}</span>
+            </Link>
+            <Link to="/dashboard/favorites" className="bg-card rounded-xl p-6 shadow-card hover:shadow-lg transition-shadow text-center">
+              <Heart className="w-8 h-8 text-red-500 mx-auto mb-2" />
+              <span className="font-medium text-foreground">{t("customer.favorites")}</span>
             </Link>
             <Link to="/dashboard/profile" className="bg-card rounded-xl p-6 shadow-card hover:shadow-lg transition-shadow text-center">
               <Shield className="w-8 h-8 text-emerald-600 mx-auto mb-2" />
-              <span className="font-medium text-foreground">My Profile</span>
+              <span className="font-medium text-foreground">{t("customer.myProfile")}</span>
             </Link>
             <Link to="/how-it-works" className="bg-card rounded-xl p-6 shadow-card hover:shadow-lg transition-shadow text-center">
-              <Search className="w-8 h-8 text-accent mx-auto mb-2" />
-              <span className="font-medium text-foreground">How It Works</span>
+              <Star className="w-8 h-8 text-accent mx-auto mb-2" />
+              <span className="font-medium text-foreground">{t("customer.howItWorks")}</span>
             </Link>
           </div>
         </div>
       </section>
+
+      {/* Favorite Providers */}
+      <FavoriteProviders />
 
       {/* Upcoming Bookings */}
       {upcomingBookings.length > 0 && (
         <section className="py-6 px-4">
           <div className="container mx-auto">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-semibold text-foreground">Upcoming Bookings</h2>
+              <h2 className="text-xl font-semibold text-foreground">{t("customer.upcomingBookings")}</h2>
               <Link to="/dashboard/bookings" className="text-primary text-sm hover:underline">
-                View all
+                {t("customer.viewAll")}
               </Link>
             </div>
             <div className="grid gap-4">
@@ -144,7 +153,7 @@ const CustomerHomePage = () => {
                       </div>
                     </div>
                     <Button variant="outline" size="sm" asChild>
-                      <Link to="/dashboard/bookings">Details</Link>
+                      <Link to="/dashboard/bookings">{t("customer.details")}</Link>
                     </Button>
                   </div>
                 </div>
@@ -162,14 +171,14 @@ const CustomerHomePage = () => {
         <div className="container mx-auto">
           <div className="bg-gradient-to-r from-primary to-accent rounded-2xl p-8 text-center text-primary-foreground">
             <h2 className="text-2xl md:text-3xl font-bold mb-4">
-              Need a Specific Service?
+              {t("customer.needService")}
             </h2>
             <p className="opacity-80 mb-6 max-w-md mx-auto">
               Browse our full catalog of verified service providers and book with confidence.
             </p>
             <Button size="lg" variant="secondary" asChild>
               <Link to="/services">
-                Explore Services
+                {t("customer.exploreServices")}
                 <ChevronRight className="w-5 h-5 ml-1" />
               </Link>
             </Button>

@@ -64,6 +64,17 @@ const BookingActions = ({ booking, isProvider = false, hasReview = false }: Book
     }
   };
 
+  // Helper to send booking email
+  const sendBookingEmail = async (emailType: string) => {
+    try {
+      await supabase.functions.invoke('send-booking-email', {
+        body: { type: emailType, bookingId: booking.id }
+      });
+    } catch (err) {
+      console.error("Email send error:", err);
+    }
+  };
+
   const updateStatusMutation = useMutation({
     mutationFn: async (newStatus: string) => {
       const updateData: Record<string, unknown> = { status: newStatus };
@@ -107,9 +118,11 @@ const BookingActions = ({ booking, isProvider = false, hasReview = false }: Book
           await createNotification(
             provider.user_id,
             "Job Completed! 🎉",
-            `You completed the job "${booking.services?.title || 'Service'}". $${amount} has been added to your earnings.`,
+            `You completed the job "${booking.services?.title || 'Service'}". Rs.${amount} has been added to your earnings.`,
             "success"
           );
+          // Send completion receipt email
+          sendBookingEmail("booking_completed");
         }
       } else {
         const { error } = await supabase
@@ -128,6 +141,8 @@ const BookingActions = ({ booking, isProvider = false, hasReview = false }: Book
           `Your booking with ${booking.service_providers?.business_name || "the provider"} has been accepted.`,
           "success"
         );
+        // Send confirmation email
+        sendBookingEmail("booking_confirmation");
       } else if (newStatus === "cancelled") {
         if (isProvider && booking.user_id) {
           await createNotification(

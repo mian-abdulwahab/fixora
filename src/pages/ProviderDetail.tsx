@@ -34,7 +34,8 @@ import {
   Shield,
   Award,
   ArrowLeft
-} from "lucide-react";
+ } from "lucide-react";
+import FavoriteButton from "@/components/ui/FavoriteButton";
 import { useToast } from "@/hooks/use-toast";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -322,6 +323,9 @@ const ProviderDetail = () => {
                     </div>
 
                     <div className="flex gap-3">
+                      {user && (
+                        <FavoriteButton providerId={id || ""} size="default" variant="outline" showLabel />
+                      )}
                       {user && (
                         <Button 
                           size="lg" 
