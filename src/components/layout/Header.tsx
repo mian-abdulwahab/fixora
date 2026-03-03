@@ -45,9 +45,9 @@ const Header = () => {
     }
     return [
       { href: "/", label: t("nav.home") },
+      { href: "/dashboard", label: t("nav.dashboard") },
       { href: "/services", label: t("nav.findServices") },
       { href: "/ai-analyzer", label: t("nav.aiAnalyzer") },
-      { href: "/dashboard", label: t("nav.myBookings") },
     ];
   };
 
