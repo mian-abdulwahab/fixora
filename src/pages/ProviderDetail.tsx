@@ -7,6 +7,8 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Calendar } from "@/components/ui/calendar";
+import PaymentMethodSelector from "@/components/booking/PaymentMethodSelector";
+import RatingBreakdown from "@/components/booking/RatingBreakdown";
 import {
   Dialog,
   DialogContent,
@@ -56,6 +58,7 @@ const ProviderDetail = () => {
   const [selectedService, setSelectedService] = useState("");
   const [address, setAddress] = useState("");
   const [notes, setNotes] = useState("");
+  const [paymentMethod, setPaymentMethod] = useState("");
   const [isBookingOpen, setIsBookingOpen] = useState(false);
 
   // Safe public fields for provider display (no email, phone, application_status, rejection_reason)
@@ -127,8 +130,8 @@ const ProviderDetail = () => {
   const createBookingMutation = useMutation({
     mutationFn: async () => {
       if (!user) throw new Error("Please login to book");
-      if (!selectedDate || !selectedTime || !selectedService || !address) {
-        throw new Error("Please fill all required fields");
+      if (!selectedDate || !selectedTime || !selectedService || !address || !paymentMethod) {
+        throw new Error("Please fill all required fields including payment method");
       }
 
       const service = services.find(s => s.id === selectedService);
@@ -145,7 +148,8 @@ const ProviderDetail = () => {
           address,
           notes,
           total_amount: service.price,
-        })
+          payment_method: paymentMethod,
+        } as any)
         .select()
         .single();
 
@@ -183,6 +187,7 @@ const ProviderDetail = () => {
       setSelectedTime("");
       setSelectedService("");
       setNotes("");
+      setPaymentMethod("");
     },
     onError: (error: Error) => {
       toast({
@@ -411,6 +416,11 @@ const ProviderDetail = () => {
                                 />
                               </div>
 
+                              <PaymentMethodSelector
+                                value={paymentMethod}
+                                onChange={setPaymentMethod}
+                              />
+
                               <Button 
                                 type="submit" 
                                 className="w-full"
@@ -495,16 +505,13 @@ const ProviderDetail = () => {
 
               {/* Reviews */}
               <section className="bg-card rounded-2xl shadow-card p-6">
-                <div className="flex items-center justify-between mb-6">
-                  <h2 className="text-xl font-semibold text-foreground">Reviews</h2>
-                  <div className="flex items-center gap-2">
-                    <Star className="w-5 h-5 text-accent fill-accent" />
-                    <span className="font-semibold text-foreground">{averageRating.toFixed(1)}</span>
-                    <span className="text-muted-foreground">({reviews.length} reviews)</span>
-                  </div>
-                </div>
+                <h2 className="text-xl font-semibold text-foreground mb-6">Reviews</h2>
+                
+                {/* Rating Breakdown */}
+                <RatingBreakdown reviews={reviews as any} />
+
                 {reviews.length > 0 ? (
-                  <div className="space-y-4">
+                  <div className="space-y-4 mt-6">
                     {reviews.map((review) => (
                       <div key={review.id} className="p-4 rounded-xl bg-secondary/50">
                         <div className="flex items-center justify-between mb-2">

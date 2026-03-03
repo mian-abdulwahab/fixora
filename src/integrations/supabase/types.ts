@@ -46,6 +46,41 @@ export type Database = {
           },
         ]
       }
+      booking_status_history: {
+        Row: {
+          booking_id: string
+          changed_by: string | null
+          created_at: string | null
+          id: string
+          note: string | null
+          status: string
+        }
+        Insert: {
+          booking_id: string
+          changed_by?: string | null
+          created_at?: string | null
+          id?: string
+          note?: string | null
+          status: string
+        }
+        Update: {
+          booking_id?: string
+          changed_by?: string | null
+          created_at?: string | null
+          id?: string
+          note?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "booking_status_history_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       bookings: {
         Row: {
           address: string
@@ -53,6 +88,8 @@ export type Database = {
           id: string
           notes: string | null
           payment_intent_id: string | null
+          payment_method: string | null
+          payment_receipt_url: string | null
           payment_status: Database["public"]["Enums"]["payment_status"] | null
           provider_id: string
           scheduled_date: string
@@ -69,6 +106,8 @@ export type Database = {
           id?: string
           notes?: string | null
           payment_intent_id?: string | null
+          payment_method?: string | null
+          payment_receipt_url?: string | null
           payment_status?: Database["public"]["Enums"]["payment_status"] | null
           provider_id: string
           scheduled_date: string
@@ -85,6 +124,8 @@ export type Database = {
           id?: string
           notes?: string | null
           payment_intent_id?: string | null
+          payment_method?: string | null
+          payment_receipt_url?: string | null
           payment_status?: Database["public"]["Enums"]["payment_status"] | null
           provider_id?: string
           scheduled_date?: string
@@ -365,29 +406,41 @@ export type Database = {
         Row: {
           booking_id: string
           comment: string | null
+          communication_rating: number | null
           created_at: string | null
           id: string
           provider_id: string
+          punctuality_rating: number | null
+          quality_rating: number | null
           rating: number
           user_id: string
+          value_rating: number | null
         }
         Insert: {
           booking_id: string
           comment?: string | null
+          communication_rating?: number | null
           created_at?: string | null
           id?: string
           provider_id: string
+          punctuality_rating?: number | null
+          quality_rating?: number | null
           rating: number
           user_id: string
+          value_rating?: number | null
         }
         Update: {
           booking_id?: string
           comment?: string | null
+          communication_rating?: number | null
           created_at?: string | null
           id?: string
           provider_id?: string
+          punctuality_rating?: number | null
+          quality_rating?: number | null
           rating?: number
           user_id?: string
+          value_rating?: number | null
         }
         Relationships: [
           {
