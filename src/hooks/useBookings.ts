@@ -15,6 +15,8 @@ export interface Booking {
   total_amount: number;
   payment_status: "pending" | "paid" | "refunded";
   payment_intent_id: string | null;
+  payment_method: string | null;
+  payment_receipt_url: string | null;
   created_at: string;
   updated_at: string;
   // Joined data

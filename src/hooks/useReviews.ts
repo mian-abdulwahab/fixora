@@ -9,6 +9,10 @@ export interface Review {
   provider_id: string;
   rating: number;
   comment: string | null;
+  punctuality_rating: number | null;
+  quality_rating: number | null;
+  value_rating: number | null;
+  communication_rating: number | null;
   created_at: string;
   profiles?: {
     name: string | null;
