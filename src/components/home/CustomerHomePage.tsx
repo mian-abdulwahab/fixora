@@ -19,6 +19,7 @@ import { useQuery } from "@tanstack/react-query";
 import { format } from "date-fns";
 import SmartRecommendations from "./SmartRecommendations";
 import FavoriteProviders from "./FavoriteProviders";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 
 const CustomerHomePage = () => {
   const { user } = useAuth();
@@ -61,12 +62,22 @@ const CustomerHomePage = () => {
       <section className="pt-8 pb-6 px-4">
         <div className="container mx-auto">
           <div className="bg-gradient-to-r from-primary/10 to-accent/10 rounded-2xl p-8">
-            <h1 className="text-3xl md:text-4xl font-bold text-foreground mb-2">
-              {t("customer.welcome")}, {user?.user_metadata?.name?.split(" ")[0] || "there"}! 👋
-            </h1>
-            <p className="text-muted-foreground text-lg mb-6">
-              {t("customer.whatService")}
-            </p>
+            <div className="flex items-center gap-4 mb-4">
+              <Avatar className="w-14 h-14 border-2 border-primary/20">
+                <AvatarImage src={profile?.avatar_url || ""} alt={profile?.name || "User"} />
+                <AvatarFallback className="bg-primary/10 text-primary text-xl font-bold">
+                  {(profile?.name || user?.user_metadata?.name || "U").charAt(0).toUpperCase()}
+                </AvatarFallback>
+              </Avatar>
+              <div>
+                <h1 className="text-3xl md:text-4xl font-bold text-foreground">
+                  {t("customer.welcome")}, {profile?.name?.split(" ")[0] || user?.user_metadata?.name?.split(" ")[0] || "there"}! 👋
+                </h1>
+                <p className="text-muted-foreground text-lg">
+                  {t("customer.whatService")}
+                </p>
+              </div>
+            </div>
             <div className="relative max-w-xl">
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
               <input

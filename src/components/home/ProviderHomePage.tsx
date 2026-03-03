@@ -18,6 +18,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
 import ApplicationStatusBanner from "@/components/provider/ApplicationStatusBanner";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 
 const ProviderHomePage = () => {
   const { user } = useAuth();
@@ -103,14 +104,24 @@ const ProviderHomePage = () => {
       <section className="pt-6 pb-6 px-4">
         <div className="container mx-auto">
           <div className="bg-gradient-to-r from-accent/10 to-primary/10 rounded-2xl p-8">
-            <h1 className="text-3xl md:text-4xl font-bold text-foreground mb-2">
-              Welcome back, {provider?.business_name || user?.user_metadata?.name || "Provider"}! 🛠️
-            </h1>
-            <p className="text-muted-foreground text-lg">
-              {provider?.verified 
-                ? "Here's your business overview for today."
-                : "Complete your setup and wait for verification."}
-            </p>
+            <div className="flex items-center gap-4 mb-2">
+              <Avatar className="w-14 h-14 border-2 border-accent/20">
+                <AvatarImage src={provider?.avatar_url || ""} alt={provider?.business_name || "Provider"} />
+                <AvatarFallback className="bg-accent/10 text-accent text-xl font-bold">
+                  {(provider?.business_name || user?.user_metadata?.name || "P").charAt(0).toUpperCase()}
+                </AvatarFallback>
+              </Avatar>
+              <div>
+                <h1 className="text-3xl md:text-4xl font-bold text-foreground">
+                  Welcome back, {provider?.business_name || user?.user_metadata?.name || "Provider"}! 🛠️
+                </h1>
+                <p className="text-muted-foreground text-lg">
+                  {provider?.verified 
+                    ? "Here's your business overview for today."
+                    : "Complete your setup and wait for verification."}
+                </p>
+              </div>
+            </div>
           </div>
         </div>
       </section>

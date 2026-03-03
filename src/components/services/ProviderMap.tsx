@@ -1,6 +1,8 @@
 import { useEffect, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useCustomerCity } from "@/hooks/useCustomerCity";
+import { useAuth } from "@/contexts/AuthContext";
 import "leaflet/dist/leaflet.css";
 
 // Pakistan city coordinates
@@ -23,6 +25,15 @@ const cityCoordinates: Record<string, [number, number]> = {
   "Sukkur": [27.7052, 68.8574],
   "Mardan": [34.1986, 72.0404],
   "Mingora": [34.7717, 72.3609],
+  "Okara": [30.8138, 73.4534],
+  "Jhang": [31.2681, 72.3181],
+  "Rahim Yar Khan": [28.4202, 70.2952],
+  "Larkana": [27.5570, 68.2141],
+  "Sheikhupura": [31.7131, 73.9857],
+  "Kasur": [31.1186, 74.4503],
+  "Dera Ghazi Khan": [30.0489, 70.6455],
+  "Chiniot": [31.7167, 72.9781],
+  "Mianwali": [32.5853, 71.5436],
 };
 
 interface ProviderMapProps {
@@ -32,15 +43,24 @@ interface ProviderMapProps {
 const ProviderMap = ({ className = "" }: ProviderMapProps) => {
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<any>(null);
+  const { user } = useAuth();
+  const { customerCity } = useCustomerCity();
 
   const { data: providers = [] } = useQuery({
-    queryKey: ["providers-for-map"],
+    queryKey: ["providers-for-map", customerCity, user?.id],
     queryFn: async () => {
-      const { data, error } = await supabase
+      let query = supabase
         .from("service_providers")
         .select("id, business_name, location, rating, total_reviews, total_jobs, verified, avatar_url, latitude, longitude")
         .eq("is_active", true)
         .eq("verified", true);
+      
+      // Filter by customer's city when logged in
+      if (user && customerCity) {
+        query = query.ilike("location", `%${customerCity}%`);
+      }
+      
+      const { data, error } = await query;
       if (error) throw error;
       return data || [];
     },
@@ -64,9 +84,15 @@ const ProviderMap = ({ className = "" }: ProviderMapProps) => {
         scrollWheelZoom: false,
       }).setView([30.3753, 69.3451], 5); // Center of Pakistan
 
-      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
-        maxZoom: 18,
+      // Satellite view using Esri World Imagery
+      L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}", {
+        attribution: '&copy; Esri, Maxar, Earthstar Geographics',
+        maxZoom: 19,
+      }).addTo(map);
+
+      // Add labels overlay on satellite
+      L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}", {
+        maxZoom: 19,
       }).addTo(map);
 
       mapInstanceRef.current = map;

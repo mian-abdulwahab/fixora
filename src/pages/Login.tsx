@@ -29,10 +29,10 @@ const Login = () => {
         navigate("/admin");
         break;
       case "provider":
-        navigate("/provider-dashboard");
+        navigate("/");
         break;
       default:
-        navigate("/dashboard");
+        navigate("/");
     }
   };
 

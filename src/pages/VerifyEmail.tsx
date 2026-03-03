@@ -220,12 +220,12 @@ const VerifyEmail = () => {
       .maybeSingle();
 
     if (providerProfile) {
-      navigate("/provider-dashboard");
+      navigate("/");
       return;
     }
 
-    // Default: customer
-    navigate("/dashboard");
+    // Default: customer home page
+    navigate("/");
   };
 
   if (loading) {
