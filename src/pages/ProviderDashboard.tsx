@@ -75,14 +75,12 @@ const ProviderDashboard = () => {
   const { unreadCount } = useUnreadMessages();
   useMessageNotifications();
 
-  // Redirect non-providers
   useEffect(() => {
     if (!authLoading && (!user || (userRole && userRole !== "provider" && userRole !== "admin"))) {
       navigate("/login");
     }
   }, [user, userRole, authLoading, navigate]);
 
-  // Fetch provider profile
   const { data: provider, isLoading: providerLoading } = useQuery({
     queryKey: ["my-provider-profile", user?.id],
     queryFn: async () => {
@@ -92,97 +90,62 @@ const ProviderDashboard = () => {
         .select("*")
         .eq("user_id", user.id)
         .maybeSingle();
-      
       if (error) throw error;
       return data;
     },
     enabled: !!user?.id,
   });
 
-  // Fetch provider bookings
   const { data: bookings = [] } = useQuery({
     queryKey: ["provider-bookings", provider?.id],
     queryFn: async () => {
       if (!provider?.id) return [];
       const { data, error } = await supabase
         .from("bookings")
-        .select(`
-          *,
-          services:service_id (title)
-        `)
+        .select(`*, services:service_id (title)`)
         .eq("provider_id", provider.id)
         .order("scheduled_date", { ascending: true });
-      
       if (error) throw error;
-      
-      // Fetch customer profiles separately
       const userIds = [...new Set(data.map(b => b.user_id))];
       const { data: profiles } = await supabase
         .from("profiles")
         .select("id, name, email, phone")
         .in("id", userIds);
-      
       const profileMap = new Map(profiles?.map(p => [p.id, p]) || []);
-      
-      return data.map(booking => ({
-        ...booking,
-        customer: profileMap.get(booking.user_id) || null,
-      }));
+      return data.map(booking => ({ ...booking, customer: profileMap.get(booking.user_id) || null }));
     },
     enabled: !!provider?.id,
   });
 
-  // Fetch provider services
   const { data: services = [] } = useQuery({
     queryKey: ["provider-services", provider?.id],
     queryFn: async () => {
       if (!provider?.id) return [];
-      const { data, error } = await supabase
-        .from("services")
-        .select("*")
-        .eq("provider_id", provider.id);
-      
+      const { data, error } = await supabase.from("services").select("*").eq("provider_id", provider.id);
       if (error) throw error;
       return data;
     },
     enabled: !!provider?.id,
   });
 
-  // Create provider profile mutation
   const createProviderMutation = useMutation({
     mutationFn: async (data: typeof businessData) => {
-      const { error } = await supabase
-        .from("service_providers")
-        .insert({
-          user_id: user!.id,
-          ...data,
-        });
+      const { error } = await supabase.from("service_providers").insert({ user_id: user!.id, ...data });
       if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["my-provider-profile"] });
       setIsSetupOpen(false);
-      toast({
-        title: "Business profile created!",
-        description: "You can now add your services.",
-      });
+      toast({ title: "Business profile created!", description: "You can now add your services." });
     },
     onError: (error: Error) => {
-      toast({
-        title: "Failed to create profile",
-        description: error.message,
-        variant: "destructive",
-      });
+      toast({ title: "Failed to create profile", description: error.message, variant: "destructive" });
     },
   });
 
-  // Update booking status mutation
   const updateBookingMutation = useMutation({
     mutationFn: async ({ id, status }: { id: string; status: "pending" | "confirmed" | "in_progress" | "completed" | "cancelled" }) => {
-      const { error } = await supabase
-        .from("bookings")
-        .update({ status })
-        .eq("id", id);
+      const { error } = await supabase.from("bookings").update({ status }).eq("id", id);
       if (error) throw error;
     },
     onSuccess: () => {
@@ -191,19 +154,12 @@ const ProviderDashboard = () => {
     },
   });
 
-  const handleSignOut = async () => {
-    await signOut();
-    navigate("/");
-  };
+  const handleSignOut = async () => { await signOut(); navigate("/"); };
 
   const handleCreateProfile = (e: React.FormEvent) => {
     e.preventDefault();
     if (!businessData.business_name) {
-      toast({
-        title: "Business name required",
-        description: "Please enter your business name.",
-        variant: "destructive",
-      });
+      toast({ title: "Business name required", description: "Please enter your business name.", variant: "destructive" });
       return;
     }
     createProviderMutation.mutate(businessData);
@@ -219,13 +175,11 @@ const ProviderDashboard = () => {
 
   if (!user) return null;
 
+  const isApproved = (provider as any)?.application_status === "approved";
   const pendingBookings = bookings.filter(b => b.status === "pending");
   const upcomingBookings = bookings.filter(b => ["confirmed", "in_progress"].includes(b.status || ""));
   const completedBookings = bookings.filter(b => ["completed", "cancelled"].includes(b.status || ""));
-
-  const totalEarnings = bookings
-    .filter(b => b.payment_status === "paid")
-    .reduce((sum, b) => sum + Number(b.total_amount), 0);
+  const totalEarnings = bookings.filter(b => b.payment_status === "paid").reduce((sum, b) => sum + Number(b.total_amount), 0);
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -238,15 +192,33 @@ const ProviderDashboard = () => {
     }
   };
 
-  const currentBookings = activeTab === "pending" 
-    ? pendingBookings 
-    : activeTab === "upcoming" 
-    ? upcomingBookings 
-    : completedBookings;
+  const currentBookings = activeTab === "pending" ? pendingBookings : activeTab === "upcoming" ? upcomingBookings : completedBookings;
 
   return (
-    <div className="min-h-screen bg-secondary/30">
+    <div className="min-h-screen bg-secondary/30 relative">
       <Header />
+
+      {/* Full page lock overlay for unapproved providers */}
+      {provider && !isApproved && (
+        <div className="fixed inset-0 z-40 bg-background/70 backdrop-blur-sm flex items-center justify-center p-4" style={{ top: "64px" }}>
+          <div className="text-center p-8 bg-card rounded-2xl shadow-2xl max-w-md w-full border border-border">
+            <Clock className="w-16 h-16 text-accent mx-auto mb-4" />
+            <h2 className="text-2xl font-bold text-foreground mb-3">Account Under Review</h2>
+            <p className="text-muted-foreground mb-4">
+              Your provider application is currently being reviewed by the admin team. You'll be notified once your account is approved.
+            </p>
+            <ApplicationStatusBanner 
+              status={((provider as any).application_status || "pending") as "pending" | "approved" | "rejected"} 
+              rejectionReason={(provider as any).rejection_reason}
+              providerId={provider.id}
+            />
+            <div className="mt-6 flex gap-3 justify-center">
+              <Button variant="outline" onClick={() => navigate("/")}>Go Home</Button>
+              <Button variant="outline" onClick={handleSignOut}>Sign Out</Button>
+            </div>
+          </div>
+        </div>
+      )}
       
       <div className="pt-20 md:pt-24 flex">
         {/* Sidebar */}
@@ -267,9 +239,7 @@ const ProviderDashboard = () => {
                 key={link.href}
                 to={link.href}
                 className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
-                  link.active
-                    ? "bg-accent/10 text-accent"
-                    : "text-muted-foreground hover:bg-secondary hover:text-foreground"
+                  link.active ? "bg-accent/10 text-accent" : "text-muted-foreground hover:bg-secondary hover:text-foreground"
                 }`}
               >
                 <link.icon className="w-5 h-5" />
@@ -278,88 +248,52 @@ const ProviderDashboard = () => {
             ))}
           </nav>
 
-          <button 
-            onClick={handleSignOut}
-            className="flex items-center gap-3 px-4 py-3 rounded-lg text-destructive hover:bg-destructive/10 transition-colors mt-4"
-          >
+          <button onClick={handleSignOut} className="flex items-center gap-3 px-4 py-3 rounded-lg text-destructive hover:bg-destructive/10 transition-colors mt-4">
             <LogOut className="w-5 h-5" />
             Sign Out
           </button>
         </aside>
 
         {/* Main Content */}
-        <main className="flex-1 p-6 md:p-8">
+        <main className="flex-1 p-4 sm:p-6 md:p-8">
           <div className="max-w-5xl mx-auto">
-            {/* No Provider Profile - Show Setup */}
             {!provider && (
-              <div className="bg-card rounded-2xl shadow-card p-8 text-center">
+              <div className="bg-card rounded-2xl shadow-card p-6 sm:p-8 text-center">
                 <Briefcase className="w-16 h-16 text-accent mx-auto mb-4" />
-                <h2 className="text-2xl font-bold text-foreground mb-2">Set Up Your Business Profile</h2>
-                <p className="text-muted-foreground mb-6 max-w-md mx-auto">
+                <h2 className="text-xl sm:text-2xl font-bold text-foreground mb-2">Set Up Your Business Profile</h2>
+                <p className="text-muted-foreground mb-6 max-w-md mx-auto text-sm sm:text-base">
                   Create your business profile to start receiving bookings and growing your business on Fixora.
                 </p>
                 <Dialog open={isSetupOpen} onOpenChange={setIsSetupOpen}>
                   <DialogTrigger asChild>
-                    <Button size="lg">
-                      <Plus className="w-5 h-5 mr-2" />
-                      Create Business Profile
-                    </Button>
+                    <Button size="lg"><Plus className="w-5 h-5 mr-2" />Create Business Profile</Button>
                   </DialogTrigger>
                   <DialogContent className="max-w-lg">
                     <DialogHeader>
                       <DialogTitle>Create Your Business Profile</DialogTitle>
-                      <DialogDescription>
-                        Enter your business details to get started.
-                      </DialogDescription>
+                      <DialogDescription>Enter your business details to get started.</DialogDescription>
                     </DialogHeader>
                     <form onSubmit={handleCreateProfile} className="space-y-4 mt-4">
                       <div>
                         <Label htmlFor="business_name">Business Name *</Label>
-                        <Input
-                          id="business_name"
-                          value={businessData.business_name}
-                          onChange={(e) => setBusinessData({ ...businessData, business_name: e.target.value })}
-                          placeholder="e.g., John's Plumbing Services"
-                          required
-                        />
+                        <Input id="business_name" value={businessData.business_name} onChange={(e) => setBusinessData({ ...businessData, business_name: e.target.value })} placeholder="e.g., John's Plumbing Services" required />
                       </div>
                       <div>
                         <Label htmlFor="description">Description</Label>
-                        <Textarea
-                          id="description"
-                          value={businessData.description}
-                          onChange={(e) => setBusinessData({ ...businessData, description: e.target.value })}
-                          placeholder="Describe your services..."
-                          rows={3}
-                        />
+                        <Textarea id="description" value={businessData.description} onChange={(e) => setBusinessData({ ...businessData, description: e.target.value })} placeholder="Describe your services..." rows={3} />
                       </div>
                       <div>
                         <Label htmlFor="location">City</Label>
-                        <CitySelect
-                          value={businessData.location}
-                          onChange={(value) => setBusinessData({ ...businessData, location: value })}
-                          placeholder="Select your city..."
-                        />
+                        <CitySelect value={businessData.location} onChange={(value) => setBusinessData({ ...businessData, location: value })} placeholder="Select your city..." />
                       </div>
                       <div className="grid grid-cols-2 gap-4">
                         <div>
                           <Label htmlFor="phone">Phone</Label>
-                          <Input
-                            id="phone"
-                            value={businessData.phone}
-                            onChange={(e) => setBusinessData({ ...businessData, phone: e.target.value })}
-                            placeholder="(555) 123-4567"
-                          />
+                          <Input id="phone" value={businessData.phone} onChange={(e) => setBusinessData({ ...businessData, phone: e.target.value })} placeholder="(555) 123-4567" />
                         </div>
                         <div>
                           <Label htmlFor="email">Email</Label>
-                          <Input
-                            id="email"
-                            type="email"
-                            value={businessData.email}
-                            onChange={(e) => setBusinessData({ ...businessData, email: e.target.value })}
-                            placeholder="contact@business.com"
-                          />
+                          <Input id="email" type="email" value={businessData.email} onChange={(e) => setBusinessData({ ...businessData, email: e.target.value })} placeholder="contact@business.com" />
                         </div>
                       </div>
                       <Button type="submit" className="w-full" disabled={createProviderMutation.isPending}>
@@ -371,219 +305,144 @@ const ProviderDashboard = () => {
               </div>
             )}
 
-            {/* Provider Dashboard Content */}
             {provider && (
               <>
-                {/* Application Status Banner */}
                 <ApplicationStatusBanner 
-                  status={(provider as any).application_status || "pending"} 
+                  status={((provider as any).application_status || "pending") as "pending" | "approved" | "rejected"} 
                   rejectionReason={(provider as any).rejection_reason}
                   providerId={provider.id}
                 />
 
-                {/* Header */}
                 <div className="mb-8">
                   <div className="flex items-center gap-2 mb-2">
-                    <h1 className="text-2xl md:text-3xl font-bold text-foreground">
+                    <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-foreground">
                       Welcome back, {provider.business_name}!
                     </h1>
                     {provider.verified && <VerifiedBadge size="lg" />}
                   </div>
-                  <p className="text-muted-foreground">
-                    {provider.verified 
-                      ? "Manage your bookings, services, and grow your business."
-                      : "Complete your profile while waiting for verification."}
+                  <p className="text-muted-foreground text-sm sm:text-base">
+                    {provider.verified ? "Manage your bookings, services, and grow your business." : "Complete your profile while waiting for verification."}
                   </p>
                 </div>
 
-                {/* Dashboard content wrapper - locked for unapproved providers */}
-                <div className="relative">
-                  {(provider as any).application_status !== "approved" && (
-                    <div className="absolute inset-0 bg-background/60 backdrop-blur-[2px] z-10 rounded-2xl flex items-center justify-center pointer-events-auto">
-                      <div className="text-center p-8">
-                        <Clock className="w-12 h-12 text-accent mx-auto mb-3" />
-                        <h3 className="text-lg font-semibold text-foreground mb-2">Dashboard Locked</h3>
-                        <p className="text-muted-foreground max-w-sm">
-                          Your dashboard features will be unlocked once the admin approves your application. You'll be notified when this happens.
-                        </p>
-                      </div>
+                {/* Stats */}
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4 mb-8">
+                  <div className="bg-card rounded-xl shadow-card p-4 sm:p-5">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-muted-foreground text-xs sm:text-sm">Pending</span>
+                      <Clock className="w-4 h-4 sm:w-5 sm:h-5 text-accent" />
+                    </div>
+                    <p className="text-xl sm:text-2xl font-bold text-foreground">{pendingBookings.length}</p>
+                  </div>
+                  <div className="bg-card rounded-xl shadow-card p-4 sm:p-5">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-muted-foreground text-xs sm:text-sm">Upcoming</span>
+                      <Calendar className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
+                    </div>
+                    <p className="text-xl sm:text-2xl font-bold text-foreground">{upcomingBookings.length}</p>
+                  </div>
+                  <div className="bg-card rounded-xl shadow-card p-4 sm:p-5">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-muted-foreground text-xs sm:text-sm">Jobs Done</span>
+                      <CheckCircle className="w-4 h-4 sm:w-5 sm:h-5 text-emerald-600" />
+                    </div>
+                    <p className="text-xl sm:text-2xl font-bold text-foreground">{provider.total_jobs || 0}</p>
+                  </div>
+                  <div className="bg-card rounded-xl shadow-card p-4 sm:p-5">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-muted-foreground text-xs sm:text-sm">Earnings</span>
+                      <DollarSign className="w-4 h-4 sm:w-5 sm:h-5 text-emerald-600" />
+                    </div>
+                    <p className="text-xl sm:text-2xl font-bold text-foreground">${totalEarnings.toFixed(0)}</p>
+                  </div>
+                  <div className="bg-card rounded-xl shadow-card p-4 sm:p-5">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-muted-foreground text-xs sm:text-sm">Rating</span>
+                      <Star className="w-4 h-4 sm:w-5 sm:h-5 text-accent fill-accent" />
+                    </div>
+                    <p className="text-xl sm:text-2xl font-bold text-foreground">{provider.rating ? Number(provider.rating).toFixed(1) : "N/A"}</p>
+                  </div>
+                </div>
+
+                {/* Services Quick View */}
+                <div className="bg-card rounded-2xl shadow-card p-4 sm:p-6 mb-8">
+                  <div className="flex items-center justify-between mb-4">
+                    <h2 className="text-lg sm:text-xl font-semibold text-foreground">Your Services</h2>
+                    <Button variant="outline" size="sm" asChild>
+                      <Link to="/provider-dashboard/services"><Plus className="w-4 h-4 mr-1" />Add Service</Link>
+                    </Button>
+                  </div>
+                  {services.length === 0 ? (
+                    <p className="text-muted-foreground text-center py-8 text-sm">No services yet. Add your first service to start receiving bookings.</p>
+                  ) : (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                      {services.slice(0, 3).map((service) => (
+                        <div key={service.id} className="border border-border rounded-lg p-4">
+                          <h3 className="font-medium text-foreground text-sm">{service.title}</h3>
+                          <p className="text-sm text-muted-foreground mt-1">${Number(service.price).toFixed(0)} / {service.price_type}</p>
+                        </div>
+                      ))}
                     </div>
                   )}
+                </div>
 
-                  {/* Stats */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
-                    <div className="bg-card rounded-xl shadow-card p-5">
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="text-muted-foreground text-sm">Pending</span>
-                        <Clock className="w-5 h-5 text-accent" />
-                      </div>
-                      <p className="text-2xl font-bold text-foreground">{pendingBookings.length}</p>
-                    </div>
-                    <div className="bg-card rounded-xl shadow-card p-5">
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="text-muted-foreground text-sm">Upcoming</span>
-                        <Calendar className="w-5 h-5 text-primary" />
-                      </div>
-                      <p className="text-2xl font-bold text-foreground">{upcomingBookings.length}</p>
-                    </div>
-                    <div className="bg-card rounded-xl shadow-card p-5">
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="text-muted-foreground text-sm">Jobs Completed</span>
-                        <CheckCircle className="w-5 h-5 text-emerald-600" />
-                      </div>
-                      <p className="text-2xl font-bold text-foreground">{provider.total_jobs || 0}</p>
-                    </div>
-                    <div className="bg-card rounded-xl shadow-card p-5">
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="text-muted-foreground text-sm">Total Earnings</span>
-                        <DollarSign className="w-5 h-5 text-emerald-600" />
-                      </div>
-                      <p className="text-2xl font-bold text-foreground">${totalEarnings.toFixed(0)}</p>
-                    </div>
-                    <div className="bg-card rounded-xl shadow-card p-5">
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="text-muted-foreground text-sm">Rating</span>
-                        <Star className="w-5 h-5 text-accent fill-accent" />
-                      </div>
-                      <p className="text-2xl font-bold text-foreground">
-                        {provider.rating ? Number(provider.rating).toFixed(1) : "N/A"}
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* Services Quick View */}
-                  <div className="bg-card rounded-2xl shadow-card p-6 mb-8">
-                    <div className="flex items-center justify-between mb-4">
-                      <h2 className="text-xl font-semibold text-foreground">Your Services</h2>
-                      <Button variant="outline" size="sm" asChild>
-                        <Link to="/provider-dashboard/services">
-                          <Plus className="w-4 h-4 mr-1" />
-                          Add Service
-                        </Link>
-                      </Button>
-                    </div>
-                    {services.length === 0 ? (
-                      <p className="text-muted-foreground text-center py-8">
-                        No services yet. Add your first service to start receiving bookings.
-                      </p>
-                    ) : (
-                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                        {services.slice(0, 3).map((service) => (
-                          <div key={service.id} className="border border-border rounded-lg p-4">
-                            <h3 className="font-medium text-foreground">{service.title}</h3>
-                            <p className="text-sm text-muted-foreground mt-1">
-                              ${Number(service.price).toFixed(0)} / {service.price_type}
-                            </p>
-                          </div>
+                {/* Bookings */}
+                <div className="bg-card rounded-2xl shadow-card">
+                  <div className="p-4 sm:p-6 border-b border-border">
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                      <h2 className="text-lg sm:text-xl font-semibold text-foreground">Bookings</h2>
+                      <div className="flex gap-2 flex-wrap">
+                        {["pending", "upcoming", "completed"].map((tab) => (
+                          <button key={tab} onClick={() => setActiveTab(tab as typeof activeTab)}
+                            className={`px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-medium transition-colors capitalize ${
+                              activeTab === tab ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-secondary"
+                            }`}
+                          >
+                            {tab} {tab === "pending" && pendingBookings.length > 0 && `(${pendingBookings.length})`}
+                          </button>
                         ))}
                       </div>
-                    )}
+                    </div>
                   </div>
 
-                  {/* Bookings */}
-                  <div className="bg-card rounded-2xl shadow-card">
-                    <div className="p-6 border-b border-border">
-                      <div className="flex items-center justify-between">
-                        <h2 className="text-xl font-semibold text-foreground">Bookings</h2>
-                        <div className="flex gap-2">
-                          {["pending", "upcoming", "completed"].map((tab) => (
-                            <button
-                              key={tab}
-                              onClick={() => setActiveTab(tab as typeof activeTab)}
-                              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors capitalize ${
-                                activeTab === tab
-                                  ? "bg-primary text-primary-foreground"
-                                  : "text-muted-foreground hover:bg-secondary"
-                              }`}
-                            >
-                              {tab} {tab === "pending" && pendingBookings.length > 0 && `(${pendingBookings.length})`}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="divide-y divide-border">
-                      {currentBookings.length > 0 ? (
-                        currentBookings.map((booking) => (
-                          <div key={booking.id} className="p-6 hover:bg-secondary/50 transition-colors">
-                            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                              <div className="flex-1">
-                                <div className="flex items-center gap-3 mb-2">
-                                  <h3 className="font-semibold text-foreground">
-                                    {booking.services?.title || "Service"}
-                                  </h3>
-                                  <span className={`px-2 py-1 rounded-full text-xs font-medium capitalize ${getStatusColor(booking.status || "pending")}`}>
-                                    {(booking.status || "pending").replace("_", " ")}
-                                  </span>
-                                </div>
-                                <p className="text-muted-foreground text-sm mb-2">
-                                  Customer: {booking.customer?.name || "Unknown"}
-                                </p>
-                                <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
-                                  <span className="flex items-center gap-1">
-                                    <Calendar className="w-4 h-4" />
-                                    {format(new Date(booking.scheduled_date), "MMM d, yyyy")}
-                                  </span>
-                                  <span className="flex items-center gap-1">
-                                    <Clock className="w-4 h-4" />
-                                    {booking.scheduled_time}
-                                  </span>
-                                  <span className="flex items-center gap-1">
-                                    <MapPin className="w-4 h-4" />
-                                    {booking.address}
-                                  </span>
-                                </div>
-                              </div>
-                              <div className="flex items-center gap-3">
-                                <span className="text-lg font-semibold text-foreground">
-                                  ${Number(booking.total_amount).toFixed(0)}
+                  <div className="divide-y divide-border">
+                    {currentBookings.length > 0 ? (
+                      currentBookings.map((booking) => (
+                        <div key={booking.id} className="p-4 sm:p-6 hover:bg-secondary/50 transition-colors">
+                          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                            <div className="flex-1">
+                              <div className="flex items-center gap-3 mb-2 flex-wrap">
+                                <h3 className="font-semibold text-foreground text-sm sm:text-base">{booking.services?.title || "Service"}</h3>
+                                <span className={`px-2 py-1 rounded-full text-xs font-medium capitalize ${getStatusColor(booking.status || "pending")}`}>
+                                  {(booking.status || "pending").replace("_", " ")}
                                 </span>
-                                {booking.status === "pending" && (
-                                  <>
-                                    <Button
-                                      size="sm"
-                                      onClick={() => updateBookingMutation.mutate({ id: booking.id, status: "confirmed" })}
-                                    >
-                                      <CheckCircle className="w-4 h-4 mr-1" />
-                                      Accept
-                                    </Button>
-                                    <Button
-                                      size="sm"
-                                      variant="outline"
-                                      onClick={() => updateBookingMutation.mutate({ id: booking.id, status: "cancelled" })}
-                                    >
-                                      <XCircle className="w-4 h-4 mr-1" />
-                                      Decline
-                                    </Button>
-                                  </>
-                                )}
-                                {booking.status === "confirmed" && (
-                                  <Button
-                                    size="sm"
-                                    onClick={() => updateBookingMutation.mutate({ id: booking.id, status: "in_progress" })}
-                                  >
-                                    Start Job
-                                  </Button>
-                                )}
-                                {booking.status === "in_progress" && (
-                                  <Button
-                                    size="sm"
-                                    onClick={() => updateBookingMutation.mutate({ id: booking.id, status: "completed" })}
-                                  >
-                                    Complete
-                                  </Button>
-                                )}
+                              </div>
+                              <p className="text-muted-foreground text-xs sm:text-sm mb-2">Customer: {booking.customer?.name || "Unknown"}</p>
+                              <div className="flex flex-wrap items-center gap-3 sm:gap-4 text-xs sm:text-sm text-muted-foreground">
+                                <span className="flex items-center gap-1"><Calendar className="w-3.5 h-3.5" />{format(new Date(booking.scheduled_date), "MMM d, yyyy")}</span>
+                                <span className="flex items-center gap-1"><Clock className="w-3.5 h-3.5" />{booking.scheduled_time}</span>
+                                <span className="flex items-center gap-1"><MapPin className="w-3.5 h-3.5" />{booking.address}</span>
                               </div>
                             </div>
+                            <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
+                              <span className="text-base sm:text-lg font-semibold text-foreground">${Number(booking.total_amount).toFixed(0)}</span>
+                              {booking.status === "pending" && (
+                                <>
+                                  <Button size="sm" onClick={() => updateBookingMutation.mutate({ id: booking.id, status: "confirmed" })}><CheckCircle className="w-4 h-4 mr-1" />Accept</Button>
+                                  <Button size="sm" variant="outline" onClick={() => updateBookingMutation.mutate({ id: booking.id, status: "cancelled" })}><XCircle className="w-4 h-4 mr-1" />Decline</Button>
+                                </>
+                              )}
+                              {booking.status === "confirmed" && <Button size="sm" onClick={() => updateBookingMutation.mutate({ id: booking.id, status: "in_progress" })}>Start Job</Button>}
+                              {booking.status === "in_progress" && <Button size="sm" onClick={() => updateBookingMutation.mutate({ id: booking.id, status: "completed" })}>Complete</Button>}
+                            </div>
                           </div>
-                        ))
-                      ) : (
-                        <div className="p-12 text-center">
-                          <p className="text-muted-foreground">No {activeTab} bookings found.</p>
                         </div>
-                      )}
-                    </div>
+                      ))
+                    ) : (
+                      <div className="p-12 text-center">
+                        <p className="text-muted-foreground text-sm">No {activeTab} bookings found.</p>
+                      </div>
+                    )}
                   </div>
                 </div>
               </>
@@ -591,7 +450,6 @@ const ProviderDashboard = () => {
           </div>
         </main>
 
-        {/* Mobile Sidebar */}
         <MobileSidebar
           links={sidebarLinks.map(link => ({
             ...link,
