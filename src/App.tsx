@@ -42,6 +42,7 @@ import CustomerChat from "./pages/dashboard/CustomerChat";
 import CustomerFavorites from "./pages/dashboard/CustomerFavorites";
 import ReferralProgram from "./pages/dashboard/ReferralProgram";
 import AdminDisputes from "./pages/admin/AdminDisputes";
+import AdminMessages from "./pages/admin/AdminMessages";
 
 const queryClient = new QueryClient();
 
@@ -93,6 +94,7 @@ const App = () => (
                   <Route path="bookings" element={<AdminBookings />} />
                   <Route path="categories" element={<AdminCategories />} />
                   <Route path="disputes" element={<AdminDisputes />} />
+                  <Route path="messages" element={<AdminMessages />} />
                 </Route>
                 
                 <Route path="*" element={<NotFound />} />

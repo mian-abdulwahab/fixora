@@ -290,11 +290,55 @@ const ProviderBookings = () => {
                   <p className="font-medium text-foreground">{selectedBooking.notes}</p>
                 </div>
               )}
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <p className="text-sm text-muted-foreground">Amount</p>
+                  <p className="text-xl font-bold text-primary">
+                    Rs. {Number(selectedBooking.total_amount).toLocaleString()}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Payment Method</p>
+                  <p className="font-medium text-foreground capitalize">
+                    {selectedBooking.payment_method || "Not specified"}
+                  </p>
+                </div>
+              </div>
               <div>
-                <p className="text-sm text-muted-foreground">Amount</p>
-                <p className="text-xl font-bold text-primary">
-                  ${Number(selectedBooking.total_amount).toFixed(0)}
-                </p>
+                <p className="text-sm text-muted-foreground">Payment Status</p>
+                <span className={`px-2 py-1 rounded-full text-xs font-medium capitalize ${
+                  selectedBooking.payment_status === "paid"
+                    ? "bg-emerald-100 text-emerald-700"
+                    : selectedBooking.payment_status === "refunded"
+                    ? "bg-destructive/10 text-destructive"
+                    : "bg-accent/10 text-accent"
+                }`}>
+                  {selectedBooking.payment_status || "pending"}
+                </span>
+              </div>
+              {selectedBooking.payment_receipt_url && (
+                <div>
+                  <p className="text-sm text-muted-foreground mb-2">Payment Receipt</p>
+                  <a 
+                    href={selectedBooking.payment_receipt_url} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="block"
+                  >
+                    <img 
+                      src={selectedBooking.payment_receipt_url} 
+                      alt="Payment Receipt" 
+                      className="max-w-full max-h-64 rounded-lg border border-border object-contain"
+                    />
+                    <p className="text-xs text-primary mt-1 hover:underline">Click to view full size</p>
+                  </a>
+                </div>
+              )}
+              <div>
+                <p className="text-sm text-muted-foreground">Status</p>
+                <span className={`px-2 py-1 rounded-full text-xs font-medium capitalize ${getStatusColor(selectedBooking.status || "pending")}`}>
+                  {(selectedBooking.status || "pending").replace("_", " ")}
+                </span>
               </div>
             </div>
           )}

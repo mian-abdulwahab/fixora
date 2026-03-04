@@ -7,7 +7,8 @@ import {
   FolderTree,
   LogOut,
   Shield,
-  AlertTriangle
+  AlertTriangle,
+  MessageSquare
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useIsAdmin } from "@/hooks/useAdmin";
@@ -21,6 +22,7 @@ const adminLinks = [
   { icon: Calendar, label: "Bookings", href: "/admin/bookings" },
   { icon: FolderTree, label: "Categories", href: "/admin/categories" },
   { icon: AlertTriangle, label: "Disputes", href: "/admin/disputes" },
+  { icon: MessageSquare, label: "Messages", href: "/admin/messages" },
 ];
 
 const AdminDashboard: React.FC = () => {
