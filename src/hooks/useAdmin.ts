@@ -30,13 +30,35 @@ export const useAllUsers = () => {
   return useQuery({
     queryKey: ["admin", "users"],
     queryFn: async () => {
-      const { data, error } = await supabase
+      // Fetch profiles
+      const { data: profiles, error } = await supabase
         .from("profiles")
         .select("*")
         .order("created_at", { ascending: false });
       
       if (error) throw error;
-      return data;
+
+      // Fetch admin roles
+      const { data: adminRoles } = await supabase
+        .from("user_roles")
+        .select("user_id, role");
+
+      // Fetch provider user_ids
+      const { data: providers } = await supabase
+        .from("service_providers")
+        .select("user_id");
+
+      const adminUserIds = new Set(adminRoles?.filter(r => r.role === "admin").map(r => r.user_id) || []);
+      const providerUserIds = new Set(providers?.map(p => p.user_id) || []);
+
+      return (profiles || []).map(profile => ({
+        ...profile,
+        role: adminUserIds.has(profile.id) 
+          ? "admin" 
+          : providerUserIds.has(profile.id) 
+          ? "provider" 
+          : "customer",
+      }));
     },
   });
 };
@@ -45,7 +67,6 @@ export const useAllProviders = () => {
   return useQuery({
     queryKey: ["admin", "providers"],
     queryFn: async () => {
-      // Fetch providers without the problematic join
       const { data: providers, error } = await supabase
         .from("service_providers")
         .select("*")
@@ -53,7 +74,6 @@ export const useAllProviders = () => {
       
       if (error) throw error;
       
-      // Fetch profiles separately
       const userIds = [...new Set(providers?.map(p => p.user_id) || [])];
       const { data: profiles } = await supabase
         .from("profiles")
@@ -85,7 +105,6 @@ export const useAllBookings = () => {
       
       if (error) throw error;
       
-      // Fetch profiles separately to avoid relation issues
       const userIds = [...new Set(data.map(b => b.user_id))];
       const { data: profiles } = await supabase
         .from("profiles")

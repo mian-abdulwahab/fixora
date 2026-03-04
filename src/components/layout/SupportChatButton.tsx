@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { useLocation } from "react-router-dom";
 import { MessageCircle, X, Send, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,9 +11,14 @@ import { format } from "date-fns";
 const SupportChatButton = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [message, setMessage] = useState("");
-  const { user } = useAuth();
+  const { user, isAdmin } = useAuth();
   const queryClient = useQueryClient();
   const scrollRef = useRef<HTMLDivElement>(null);
+  const location = useLocation();
+
+  // Hide on admin pages or if user is admin
+  const isAdminPage = location.pathname.startsWith("/admin");
+  const shouldHide = !user || isAdmin || isAdminPage;
 
   // Find admin user
   const { data: adminUser } = useQuery({
@@ -27,7 +33,7 @@ const SupportChatButton = () => {
       if (error) throw error;
       return data;
     },
-    enabled: !!user,
+    enabled: !!user && !shouldHide,
   });
 
   // Fetch messages with admin
@@ -45,7 +51,7 @@ const SupportChatButton = () => {
       if (error) throw error;
       return data || [];
     },
-    enabled: !!user?.id && !!adminUser?.user_id,
+    enabled: !!user?.id && !!adminUser?.user_id && !shouldHide,
     refetchInterval: isOpen ? 3000 : false,
   });
 
@@ -78,14 +84,12 @@ const SupportChatButton = () => {
     sendMutation.mutate(trimmed);
   };
 
-  if (!user) return null;
+  if (shouldHide) return null;
 
   return (
     <>
-      {/* Chat Window */}
       {isOpen && (
         <div className="fixed bottom-20 right-4 z-50 w-[340px] sm:w-[380px] bg-card border border-border rounded-2xl shadow-2xl flex flex-col max-h-[70vh] animate-scale-in">
-          {/* Header */}
           <div className="flex items-center justify-between p-4 border-b border-border gradient-hero rounded-t-2xl">
             <div className="flex items-center gap-2">
               <MessageCircle className="w-5 h-5 text-primary-foreground" />
@@ -99,7 +103,6 @@ const SupportChatButton = () => {
             </button>
           </div>
 
-          {/* Messages */}
           <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 space-y-3 min-h-[200px] max-h-[400px]">
             {messages.length === 0 ? (
               <div className="text-center text-muted-foreground text-sm py-8">
@@ -129,7 +132,6 @@ const SupportChatButton = () => {
             )}
           </div>
 
-          {/* Input */}
           <div className="p-3 border-t border-border">
             <div className="flex gap-2">
               <Input
@@ -147,7 +149,6 @@ const SupportChatButton = () => {
         </div>
       )}
 
-      {/* FAB Button */}
       <button
         onClick={() => setIsOpen(!isOpen)}
         className="fixed bottom-4 right-4 z-50 w-14 h-14 rounded-full gradient-hero text-primary-foreground shadow-lg hover:shadow-glow transition-all duration-300 flex items-center justify-center"
