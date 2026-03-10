@@ -8,7 +8,8 @@ import {
   LogOut,
   Shield,
   AlertTriangle,
-  MessageSquare
+  MessageSquare,
+  DatabaseBackup
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useIsAdmin } from "@/hooks/useAdmin";
