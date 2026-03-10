@@ -43,6 +43,7 @@ import CustomerFavorites from "./pages/dashboard/CustomerFavorites";
 import ReferralProgram from "./pages/dashboard/ReferralProgram";
 import AdminDisputes from "./pages/admin/AdminDisputes";
 import AdminMessages from "./pages/admin/AdminMessages";
+import AdminExportData from "./pages/admin/AdminExportData";
 
 const queryClient = new QueryClient();
 
@@ -95,6 +96,7 @@ const App = () => (
                   <Route path="categories" element={<AdminCategories />} />
                   <Route path="disputes" element={<AdminDisputes />} />
                   <Route path="messages" element={<AdminMessages />} />
+                  <Route path="export" element={<AdminExportData />} />
                 </Route>
                 
                 <Route path="*" element={<NotFound />} />
