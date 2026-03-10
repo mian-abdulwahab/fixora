@@ -96,6 +96,7 @@ const App = () => (
                   <Route path="categories" element={<AdminCategories />} />
                   <Route path="disputes" element={<AdminDisputes />} />
                   <Route path="messages" element={<AdminMessages />} />
+                  <Route path="export" element={<AdminExportData />} />
                 </Route>
                 
                 <Route path="*" element={<NotFound />} />

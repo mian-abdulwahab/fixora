@@ -79,7 +79,7 @@ const AdminExportData = () => {
       try {
         const { data, error } = await supabase.from(table as any).select("*");
         if (error || !data?.length) continue;
-        const csv = toCsv(data as Record<string, unknown>[]);
+        const csv = toCsv(data as unknown as Record<string, unknown>[]);
         downloadFile(`${table}.csv`, csv);
       } catch {}
     }

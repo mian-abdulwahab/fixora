@@ -24,6 +24,7 @@ const adminLinks = [
   { icon: FolderTree, label: "Categories", href: "/admin/categories" },
   { icon: AlertTriangle, label: "Disputes", href: "/admin/disputes" },
   { icon: MessageSquare, label: "Messages", href: "/admin/messages" },
+  { icon: DatabaseBackup, label: "Export Data", href: "/admin/export" },
 ];
 
 const AdminDashboard: React.FC = () => {
