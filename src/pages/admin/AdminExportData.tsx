@@ -64,7 +64,7 @@ const AdminExportData = () => {
         setLoading(null);
         return;
       }
-      const csv = toCsv(data as Record<string, unknown>[]);
+      const csv = toCsv(data as unknown as Record<string, unknown>[]);
       downloadFile(`${table}.csv`, csv);
       toast.success(`${table}.csv downloaded`);
     } catch (e: any) {
