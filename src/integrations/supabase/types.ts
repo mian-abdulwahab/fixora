@@ -84,57 +84,78 @@ export type Database = {
       bookings: {
         Row: {
           address: string
+          completed_at: string | null
+          completion_otp: string | null
           created_at: string | null
+          escrow_status: string | null
           id: string
           notes: string | null
+          otp_generated_at: string | null
           payment_intent_id: string | null
           payment_method: string | null
           payment_receipt_url: string | null
           payment_status: Database["public"]["Enums"]["payment_status"] | null
+          platform_fee: number | null
           provider_id: string
           scheduled_date: string
           scheduled_time: string
           service_id: string | null
           status: Database["public"]["Enums"]["booking_status"] | null
+          stripe_session_id: string | null
           total_amount: number
           updated_at: string | null
           user_id: string
+          worker_share: number | null
         }
         Insert: {
           address: string
+          completed_at?: string | null
+          completion_otp?: string | null
           created_at?: string | null
+          escrow_status?: string | null
           id?: string
           notes?: string | null
+          otp_generated_at?: string | null
           payment_intent_id?: string | null
           payment_method?: string | null
           payment_receipt_url?: string | null
           payment_status?: Database["public"]["Enums"]["payment_status"] | null
+          platform_fee?: number | null
           provider_id: string
           scheduled_date: string
           scheduled_time: string
           service_id?: string | null
           status?: Database["public"]["Enums"]["booking_status"] | null
+          stripe_session_id?: string | null
           total_amount: number
           updated_at?: string | null
           user_id: string
+          worker_share?: number | null
         }
         Update: {
           address?: string
+          completed_at?: string | null
+          completion_otp?: string | null
           created_at?: string | null
+          escrow_status?: string | null
           id?: string
           notes?: string | null
+          otp_generated_at?: string | null
           payment_intent_id?: string | null
           payment_method?: string | null
           payment_receipt_url?: string | null
           payment_status?: Database["public"]["Enums"]["payment_status"] | null
+          platform_fee?: number | null
           provider_id?: string
           scheduled_date?: string
           scheduled_time?: string
           service_id?: string | null
           status?: Database["public"]["Enums"]["booking_status"] | null
+          stripe_session_id?: string | null
           total_amount?: number
           updated_at?: string | null
           user_id?: string
+          worker_share?: number | null
         }
         Relationships: [
           {
@@ -688,6 +709,7 @@ export type Database = {
           latitude: number | null
           location: string | null
           longitude: number | null
+          pending_balance: number | null
           phone: string | null
           rating: number | null
           rejection_reason: string | null
@@ -697,6 +719,7 @@ export type Database = {
           updated_at: string | null
           user_id: string
           verified: boolean | null
+          withdrawable_balance: number | null
         }
         Insert: {
           application_status?: string | null
@@ -712,6 +735,7 @@ export type Database = {
           latitude?: number | null
           location?: string | null
           longitude?: number | null
+          pending_balance?: number | null
           phone?: string | null
           rating?: number | null
           rejection_reason?: string | null
@@ -721,6 +745,7 @@ export type Database = {
           updated_at?: string | null
           user_id: string
           verified?: boolean | null
+          withdrawable_balance?: number | null
         }
         Update: {
           application_status?: string | null
@@ -736,6 +761,7 @@ export type Database = {
           latitude?: number | null
           location?: string | null
           longitude?: number | null
+          pending_balance?: number | null
           phone?: string | null
           rating?: number | null
           rejection_reason?: string | null
@@ -745,6 +771,7 @@ export type Database = {
           updated_at?: string | null
           user_id?: string
           verified?: boolean | null
+          withdrawable_balance?: number | null
         }
         Relationships: []
       }
@@ -834,11 +861,17 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      auto_release_escrow: { Args: never; Returns: number }
+      generate_completion_otp: { Args: { booking_id: string }; Returns: string }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
           _user_id: string
         }
+        Returns: boolean
+      }
+      verify_completion_otp: {
+        Args: { p_booking_id: string; p_otp: string }
         Returns: boolean
       }
     }
