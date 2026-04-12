@@ -206,6 +206,14 @@ const ProviderBookings = () => {
                         <span className="text-lg font-semibold text-foreground">
                           ${Number(booking.total_amount).toFixed(0)}
                         </span>
+                        <EscrowStatusBadge escrowStatus={(booking as any).escrow_status} compact />
+                        {/* OTP for in_progress bookings */}
+                        <OTPVerificationDialog
+                          bookingId={booking.id}
+                          isProvider={true}
+                          status={booking.status || "pending"}
+                          escrowStatus={(booking as any).escrow_status}
+                        />
                         <Button 
                           variant="ghost" 
                           size="sm"
