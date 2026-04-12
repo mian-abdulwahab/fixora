@@ -229,6 +229,15 @@ const CustomerBookings = () => {
 
                           {/* Payment & Contact */}
                           <div className="space-y-4">
+                            {/* Escrow Info */}
+                            {(booking as any).escrow_status && (booking as any).escrow_status !== "none" && (
+                              <EscrowStatusBadge
+                                escrowStatus={(booking as any).escrow_status}
+                                workerShare={(booking as any).worker_share}
+                                platformFee={(booking as any).platform_fee}
+                              />
+                            )}
+
                             {/* Contact info for confirmed+ */}
                             {["confirmed", "in_progress", "completed"].includes(booking.status) && (
                               <div>
