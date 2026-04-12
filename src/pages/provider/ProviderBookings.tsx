@@ -314,6 +314,14 @@ const ProviderBookings = () => {
                   </p>
                 </div>
               </div>
+              {/* Escrow breakdown */}
+              {selectedBooking.escrow_status && selectedBooking.escrow_status !== "none" && (
+                <EscrowStatusBadge
+                  escrowStatus={selectedBooking.escrow_status}
+                  workerShare={selectedBooking.worker_share}
+                  platformFee={selectedBooking.platform_fee}
+                />
+              )}
               <div>
                 <p className="text-sm text-muted-foreground">Payment Status</p>
                 <span className={`px-2 py-1 rounded-full text-xs font-medium capitalize ${
