@@ -1,6 +1,6 @@
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Smartphone, Building2, Banknote } from "lucide-react";
+import { Smartphone, Building2, Banknote, CreditCard } from "lucide-react";
 
 interface PaymentMethodSelectorProps {
   value: string;
