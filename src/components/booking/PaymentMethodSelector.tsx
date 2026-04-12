@@ -9,6 +9,14 @@ interface PaymentMethodSelectorProps {
 
 const PAYMENT_METHODS = [
   {
+    id: "stripe",
+    label: "Pay Online (Stripe)",
+    description: "Secure card payment - funds held in escrow until job completion",
+    icon: CreditCard,
+    color: "text-primary",
+    details: "Visa, Mastercard, and more",
+  },
+  {
     id: "jazzcash",
     label: "JazzCash",
     description: "Pay via JazzCash mobile wallet",
