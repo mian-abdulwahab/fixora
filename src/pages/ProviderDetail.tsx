@@ -177,14 +177,35 @@ const ProviderDetail = () => {
 
       return data;
     },
-    onSuccess: () => {
-      toast({
-        title: "Booking Submitted!",
-        description: "Your booking request has been sent. The provider will respond shortly.",
-      });
-      setIsBookingOpen(false);
+    onSuccess: async (data) => {
       queryClient.invalidateQueries({ queryKey: ["my-bookings"] });
-      // Reset form
+      
+      // If Stripe payment, redirect to checkout
+      if (paymentMethod === "stripe" && data?.id) {
+        try {
+          const { data: checkoutData, error } = await supabase.functions.invoke("create-checkout", {
+            body: { bookingId: data.id },
+          });
+          if (error) throw error;
+          if (checkoutData?.url) {
+            window.location.href = checkoutData.url;
+            return;
+          }
+        } catch (err) {
+          console.error("Stripe checkout error:", err);
+          toast({
+            title: "Booking Created!",
+            description: "Booking submitted but payment redirect failed. You can pay from your bookings page.",
+          });
+        }
+      } else {
+        toast({
+          title: "Booking Submitted!",
+          description: "Your booking request has been sent. The provider will respond shortly.",
+        });
+      }
+      
+      setIsBookingOpen(false);
       setSelectedDate(undefined);
       setSelectedTime("");
       setSelectedService("");
