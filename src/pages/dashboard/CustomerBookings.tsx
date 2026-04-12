@@ -21,6 +21,9 @@ import ProviderContactInfo from "@/components/booking/ProviderContactInfo";
 import BookingTrackingTimeline from "@/components/booking/BookingTrackingTimeline";
 import PaymentReceiptUpload from "@/components/booking/PaymentReceiptUpload";
 import DisputeDialog from "@/components/booking/DisputeDialog";
+import EscrowPaymentButton from "@/components/booking/EscrowPaymentButton";
+import EscrowStatusBadge from "@/components/booking/EscrowStatusBadge";
+import OTPVerificationDialog from "@/components/booking/OTPVerificationDialog";
 import {
   Select,
   SelectContent,
@@ -157,6 +160,23 @@ const CustomerBookings = () => {
                           <span className="text-lg font-semibold text-foreground">
                             Rs. {Number(booking.total_amount).toLocaleString()}
                           </span>
+                          <EscrowStatusBadge escrowStatus={(booking as any).escrow_status} compact />
+                          {/* Show Pay button for confirmed unpaid bookings */}
+                          {booking.status === "confirmed" && booking.payment_status !== "paid" && (
+                            <EscrowPaymentButton
+                              bookingId={booking.id}
+                              amount={Number(booking.total_amount)}
+                              escrowStatus={(booking as any).escrow_status}
+                              paymentStatus={booking.payment_status}
+                            />
+                          )}
+                          {/* OTP for in_progress with paid escrow */}
+                          <OTPVerificationDialog
+                            bookingId={booking.id}
+                            isProvider={false}
+                            status={booking.status}
+                            escrowStatus={(booking as any).escrow_status}
+                          />
                           <BookingActions 
                             booking={{
                               id: booking.id,
@@ -209,6 +229,15 @@ const CustomerBookings = () => {
 
                           {/* Payment & Contact */}
                           <div className="space-y-4">
+                            {/* Escrow Info */}
+                            {(booking as any).escrow_status && (booking as any).escrow_status !== "none" && (
+                              <EscrowStatusBadge
+                                escrowStatus={(booking as any).escrow_status}
+                                workerShare={(booking as any).worker_share}
+                                platformFee={(booking as any).platform_fee}
+                              />
+                            )}
+
                             {/* Contact info for confirmed+ */}
                             {["confirmed", "in_progress", "completed"].includes(booking.status) && (
                               <div>

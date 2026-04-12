@@ -17,6 +17,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
 import BookingActions from "@/components/booking/BookingActions";
 import DisputeDialog from "@/components/booking/DisputeDialog";
+import EscrowStatusBadge from "@/components/booking/EscrowStatusBadge";
+import OTPVerificationDialog from "@/components/booking/OTPVerificationDialog";
 import {
   Dialog,
   DialogContent,
@@ -204,6 +206,14 @@ const ProviderBookings = () => {
                         <span className="text-lg font-semibold text-foreground">
                           ${Number(booking.total_amount).toFixed(0)}
                         </span>
+                        <EscrowStatusBadge escrowStatus={(booking as any).escrow_status} compact />
+                        {/* OTP for in_progress bookings */}
+                        <OTPVerificationDialog
+                          bookingId={booking.id}
+                          isProvider={true}
+                          status={booking.status || "pending"}
+                          escrowStatus={(booking as any).escrow_status}
+                        />
                         <Button 
                           variant="ghost" 
                           size="sm"
@@ -304,6 +314,14 @@ const ProviderBookings = () => {
                   </p>
                 </div>
               </div>
+              {/* Escrow breakdown */}
+              {selectedBooking.escrow_status && selectedBooking.escrow_status !== "none" && (
+                <EscrowStatusBadge
+                  escrowStatus={selectedBooking.escrow_status}
+                  workerShare={selectedBooking.worker_share}
+                  platformFee={selectedBooking.platform_fee}
+                />
+              )}
               <div>
                 <p className="text-sm text-muted-foreground">Payment Status</p>
                 <span className={`px-2 py-1 rounded-full text-xs font-medium capitalize ${

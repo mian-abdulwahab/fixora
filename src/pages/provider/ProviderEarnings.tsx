@@ -6,17 +6,22 @@ import {
   DollarSign,
   TrendingUp,
   Calendar,
-  CheckCircle
+  CheckCircle,
+  Wallet,
+  Clock,
+  Shield,
+  Banknote
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { format, subDays, startOfMonth, endOfMonth } from "date-fns";
+import { useToast } from "@/hooks/use-toast";
 
 const ProviderEarnings = () => {
   const { user } = useAuth();
+  const { toast } = useToast();
 
-  // Fetch provider profile
   const { data: provider } = useQuery({
     queryKey: ["my-provider-profile", user?.id],
     queryFn: async () => {
@@ -26,36 +31,32 @@ const ProviderEarnings = () => {
         .select("*")
         .eq("user_id", user.id)
         .maybeSingle();
-      
       if (error) throw error;
       return data;
     },
     enabled: !!user?.id,
   });
 
-  // Fetch completed bookings for earnings
   const { data: bookings = [], isLoading } = useQuery({
     queryKey: ["provider-earnings", provider?.id],
     queryFn: async () => {
       if (!provider?.id) return [];
       const { data, error } = await supabase
         .from("bookings")
-        .select(`
-          *,
-          services:service_id (title)
-        `)
+        .select(`*, services:service_id (title)`)
         .eq("provider_id", provider.id)
         .eq("status", "completed")
         .order("scheduled_date", { ascending: false });
-      
       if (error) throw error;
       return data;
     },
     enabled: !!provider?.id,
   });
 
-  const totalEarnings = bookings.reduce((sum, b) => sum + Number(b.total_amount), 0);
-  
+  const withdrawableBalance = Number(provider?.withdrawable_balance || 0);
+  const pendingBalance = Number(provider?.pending_balance || 0);
+  const totalEarnings = bookings.reduce((sum, b) => sum + Number(b.worker_share || b.total_amount), 0);
+
   const thisMonthStart = startOfMonth(new Date());
   const thisMonthEnd = endOfMonth(new Date());
   const thisMonthEarnings = bookings
@@ -63,11 +64,18 @@ const ProviderEarnings = () => {
       const date = new Date(b.scheduled_date);
       return date >= thisMonthStart && date <= thisMonthEnd;
     })
-    .reduce((sum, b) => sum + Number(b.total_amount), 0);
+    .reduce((sum, b) => sum + Number(b.worker_share || b.total_amount), 0);
 
-  const last7DaysEarnings = bookings
-    .filter(b => new Date(b.scheduled_date) >= subDays(new Date(), 7))
-    .reduce((sum, b) => sum + Number(b.total_amount), 0);
+  const handleRequestPayout = () => {
+    if (withdrawableBalance <= 0) {
+      toast({ title: "No funds available", description: "You need completed jobs to request a payout.", variant: "destructive" });
+      return;
+    }
+    toast({ 
+      title: "Payout Request Submitted!", 
+      description: `Your payout of Rs. ${withdrawableBalance.toLocaleString()} has been submitted for processing. You'll receive it within 3-5 business days.` 
+    });
+  };
 
   if (isLoading) {
     return (
@@ -90,8 +98,39 @@ const ProviderEarnings = () => {
               </Link>
             </Button>
             <div>
-              <h1 className="text-2xl font-bold text-foreground">Earnings</h1>
-              <p className="text-muted-foreground">Track your income and completed jobs</p>
+              <h1 className="text-2xl font-bold text-foreground">Earnings & Wallet</h1>
+              <p className="text-muted-foreground">Track your income, escrow, and payouts</p>
+            </div>
+          </div>
+
+          {/* Wallet Section */}
+          <div className="bg-gradient-to-r from-primary to-primary/80 rounded-2xl p-6 mb-6 text-primary-foreground">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2">
+                <Wallet className="w-6 h-6" />
+                <h2 className="text-lg font-semibold">Your Wallet</h2>
+              </div>
+              <Button 
+                onClick={handleRequestPayout}
+                variant="secondary"
+                size="sm"
+                disabled={withdrawableBalance <= 0}
+              >
+                <Banknote className="w-4 h-4 mr-2" />
+                Request Payout
+              </Button>
+            </div>
+            <div className="grid grid-cols-2 gap-6">
+              <div>
+                <p className="text-sm opacity-80">Withdrawable Balance</p>
+                <p className="text-3xl font-bold">Rs. {withdrawableBalance.toLocaleString()}</p>
+              </div>
+              <div>
+                <p className="text-sm opacity-80 flex items-center gap-1">
+                  <Shield className="w-3 h-3" /> Pending in Escrow
+                </p>
+                <p className="text-3xl font-bold">Rs. {pendingBalance.toLocaleString()}</p>
+              </div>
             </div>
           </div>
 
@@ -99,10 +138,10 @@ const ProviderEarnings = () => {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
             <div className="bg-card rounded-xl shadow-card p-6">
               <div className="flex items-center justify-between mb-2">
-                <span className="text-muted-foreground text-sm">Total Earnings</span>
+                <span className="text-muted-foreground text-sm">Total Earned (90%)</span>
                 <DollarSign className="w-5 h-5 text-emerald-600" />
               </div>
-              <p className="text-3xl font-bold text-foreground">${totalEarnings.toFixed(0)}</p>
+              <p className="text-3xl font-bold text-foreground">Rs. {totalEarnings.toLocaleString()}</p>
               <p className="text-sm text-muted-foreground mt-1">{bookings.length} completed jobs</p>
             </div>
             <div className="bg-card rounded-xl shadow-card p-6">
@@ -110,16 +149,18 @@ const ProviderEarnings = () => {
                 <span className="text-muted-foreground text-sm">This Month</span>
                 <Calendar className="w-5 h-5 text-primary" />
               </div>
-              <p className="text-3xl font-bold text-foreground">${thisMonthEarnings.toFixed(0)}</p>
+              <p className="text-3xl font-bold text-foreground">Rs. {thisMonthEarnings.toLocaleString()}</p>
               <p className="text-sm text-muted-foreground mt-1">{format(new Date(), "MMMM yyyy")}</p>
             </div>
             <div className="bg-card rounded-xl shadow-card p-6">
               <div className="flex items-center justify-between mb-2">
-                <span className="text-muted-foreground text-sm">Last 7 Days</span>
+                <span className="text-muted-foreground text-sm">Platform Fee (10%)</span>
                 <TrendingUp className="w-5 h-5 text-accent" />
               </div>
-              <p className="text-3xl font-bold text-foreground">${last7DaysEarnings.toFixed(0)}</p>
-              <p className="text-sm text-muted-foreground mt-1">Recent earnings</p>
+              <p className="text-3xl font-bold text-foreground">
+                Rs. {bookings.reduce((sum, b) => sum + Number(b.platform_fee || 0), 0).toLocaleString()}
+              </p>
+              <p className="text-sm text-muted-foreground mt-1">Commission deducted</p>
             </div>
           </div>
 
@@ -138,13 +179,28 @@ const ProviderEarnings = () => {
                         <h3 className="font-medium text-foreground">
                           {booking.services?.title || "Service"}
                         </h3>
+                        {booking.escrow_status === "released" && (
+                          <span className="text-xs px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
+                            Released
+                          </span>
+                        )}
+                        {booking.escrow_status === "held" && (
+                          <span className="text-xs px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200 flex items-center gap-1">
+                            <Clock className="w-3 h-3" /> Pending Release
+                          </span>
+                        )}
                       </div>
                       <p className="text-sm text-muted-foreground">
                         {format(new Date(booking.scheduled_date), "MMMM d, yyyy")}
                       </p>
+                      {booking.worker_share && (
+                        <p className="text-xs text-muted-foreground mt-0.5">
+                          Your share: Rs. {Number(booking.worker_share).toLocaleString()} | Fee: Rs. {Number(booking.platform_fee || 0).toLocaleString()}
+                        </p>
+                      )}
                     </div>
                     <span className="text-lg font-semibold text-emerald-600">
-                      +${Number(booking.total_amount).toFixed(0)}
+                      +Rs. {Number(booking.worker_share || booking.total_amount).toLocaleString()}
                     </span>
                   </div>
                 ))

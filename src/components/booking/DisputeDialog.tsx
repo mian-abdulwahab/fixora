@@ -71,6 +71,16 @@ const DisputeDialog = ({ bookingId, providerId, providerName, customerId, custom
 
       if (error) throw error;
 
+      // Freeze escrow funds when dispute is raised
+      try {
+        await supabase
+          .from("bookings")
+          .update({ escrow_status: "disputed" } as any)
+          .eq("id", bookingId);
+      } catch (escrowErr) {
+        console.error("Failed to freeze escrow:", escrowErr);
+      }
+
       // Notify the filing user
       try {
         await supabase.functions.invoke("create-notification", {
