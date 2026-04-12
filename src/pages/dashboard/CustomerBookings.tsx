@@ -160,6 +160,23 @@ const CustomerBookings = () => {
                           <span className="text-lg font-semibold text-foreground">
                             Rs. {Number(booking.total_amount).toLocaleString()}
                           </span>
+                          <EscrowStatusBadge escrowStatus={(booking as any).escrow_status} compact />
+                          {/* Show Pay button for confirmed unpaid bookings */}
+                          {booking.status === "confirmed" && booking.payment_status !== "paid" && (
+                            <EscrowPaymentButton
+                              bookingId={booking.id}
+                              amount={Number(booking.total_amount)}
+                              escrowStatus={(booking as any).escrow_status}
+                              paymentStatus={booking.payment_status}
+                            />
+                          )}
+                          {/* OTP for in_progress with paid escrow */}
+                          <OTPVerificationDialog
+                            bookingId={booking.id}
+                            isProvider={false}
+                            status={booking.status}
+                            escrowStatus={(booking as any).escrow_status}
+                          />
                           <BookingActions 
                             booking={{
                               id: booking.id,
