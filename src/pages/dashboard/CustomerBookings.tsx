@@ -21,6 +21,9 @@ import ProviderContactInfo from "@/components/booking/ProviderContactInfo";
 import BookingTrackingTimeline from "@/components/booking/BookingTrackingTimeline";
 import PaymentReceiptUpload from "@/components/booking/PaymentReceiptUpload";
 import DisputeDialog from "@/components/booking/DisputeDialog";
+import EscrowPaymentButton from "@/components/booking/EscrowPaymentButton";
+import EscrowStatusBadge from "@/components/booking/EscrowStatusBadge";
+import OTPVerificationDialog from "@/components/booking/OTPVerificationDialog";
 import {
   Select,
   SelectContent,
