@@ -17,6 +17,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
 import BookingActions from "@/components/booking/BookingActions";
 import DisputeDialog from "@/components/booking/DisputeDialog";
+import EscrowStatusBadge from "@/components/booking/EscrowStatusBadge";
+import OTPVerificationDialog from "@/components/booking/OTPVerificationDialog";
 import {
   Dialog,
   DialogContent,
